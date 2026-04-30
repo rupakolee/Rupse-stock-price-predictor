@@ -1,5 +1,6 @@
 import React from "react";
 import heroImage from "../../../assets/heroImage.png";
+import { Button } from "@/components/ui/button";
 
 const HomePage: React.FC = () => {
     return (
@@ -14,9 +15,9 @@ const HomePage: React.FC = () => {
                     Unlock deep market insights using our AI-driven analysis of alternative data sources.
                 </p>
                 <div className="mt-10">
-                    <button className="bg-primary text-primary-foreground px-8 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity">
+                    <Button size="lg" className="rounded-lg font-semibold">
                         Get Started
-                    </button>
+                    </Button>
                 </div>
             </div>
 
