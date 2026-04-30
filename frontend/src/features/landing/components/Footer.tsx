@@ -1,4 +1,5 @@
 import React from "react";
+import { Button } from "@/components/ui/button";
 // import {
 //   Facebook,
 //   Twitter,
@@ -58,12 +59,12 @@ const Footer: React.FC = () => {
               placeholder="Your email address"
               className="flex-1 px-4 py-2.5 rounded-xl bg-background text-sm text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
             />
-            <button
+            <Button
               type="submit"
-              className="bg-primary text-primary-foreground text-sm font-bold px-6 py-2.5 rounded-xl hover:opacity-90 transition-opacity"
+              className="px-6 py-2.5 rounded-xl font-bold"
             >
               Subscribe
-            </button>
+            </Button>
           </form>
         </div>
       </div>

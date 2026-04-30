@@ -1,6 +1,6 @@
-// src/components/StockPrediction.jsx
 import React, { useState } from 'react';
 import axios from 'axios';
+import { Button } from '@/components/ui/button';
 
 const StockPrediction = () => {
   const [ticker, setTicker] = useState('AAPL');
@@ -37,16 +37,17 @@ const StockPrediction = () => {
         <input
           type="number"
           value={days}
-          onChange={(e) => setDays(e.target.value)}
+          onChange={(e) => setDays(Number(e.target.value))}
           className="border p-2 w-24 rounded"
           placeholder="Days"
         />
-        <button
+        <Button
           onClick={fetchPrediction}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          isLoading={loading}
+          className="bg-blue-600 text-white hover:bg-blue-700"
         >
           Predict
-        </button>
+        </Button>
       </div>
 
       {loading ? (
@@ -56,12 +57,11 @@ const StockPrediction = () => {
           {predictions.map((item, index) => (
             <div
               key={index}
-              className={`p-3 rounded border ${
-                item.type === 'actual' ? 'bg-green-100' : 'bg-yellow-100'
-              }`}
+              className={`p-3 rounded border ${item.type === 'actual' ? 'bg-green-100' : 'bg-yellow-100'
+                }`}
             >
               <p className="font-medium">
-                📅 {item.date} — 💲{item.price}
+                {item.date} - {item.price}
               </p>
               <p className="text-sm text-gray-600">{item.type.toUpperCase()}</p>
             </div>

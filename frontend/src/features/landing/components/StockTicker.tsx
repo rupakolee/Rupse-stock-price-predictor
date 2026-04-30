@@ -11,6 +11,7 @@ import {
     Legend,
 } from "chart.js";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 ChartJS.register(
     CategoryScale,
@@ -138,12 +139,14 @@ const StockTicker: React.FC = () => {
                 </div>
 
                 <div className="relative group">
-                    <button
+                    <Button
+                        variant="outline"
+                        size="icon"
                         onClick={() => scroll("left")}
-                        className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-background/80 backdrop-blur-sm border border-border p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-background/80 backdrop-blur-sm rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
                     >
                         <ChevronLeft size={20} className="text-foreground" />
-                    </button>
+                    </Button>
 
                     <div
                         ref={scrollRef}
@@ -152,12 +155,14 @@ const StockTicker: React.FC = () => {
                         {stocks.map(renderCard)}
                     </div>
 
-                    <button
+                    <Button
+                        variant="outline"
+                        size="icon"
                         onClick={() => scroll("right")}
-                        className="absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-background/80 backdrop-blur-sm border border-border p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-background/80 backdrop-blur-sm rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
                     >
                         <ChevronRight size={20} className="text-foreground" />
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>
