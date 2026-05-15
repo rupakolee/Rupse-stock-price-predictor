@@ -1,4 +1,2 @@
-export * from './layouts';
-export * from './pages';
-export * from './config';
-export * from './components';
+export * from './layout';
+export * from './pages/';

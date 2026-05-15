@@ -1,37 +1,51 @@
-import React, { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { UserPlus, TrendingUp, CheckCircle2 } from 'lucide-react'
+import { UserPlus, CheckCircle2 } from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { registerSchema } from '@/lib/auth.schema'
+import type { RegisterForm } from '@/lib/auth.schema'
 
 const Register = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
-  })
-  const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
+  const [isPending, setIsPending] = useState(false)
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<RegisterForm>({
+    resolver: zodResolver(registerSchema),
+    mode: "onChange",
+  })
 
-    // Simulating a registration delay
-    setTimeout(() => {
-      setIsLoading(false)
+  const onSubmit = async (data: RegisterForm) => {
+    try {
+      setIsPending(true)
+      const res = await fetch("http://localhost:8001/api/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data)
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        setIsPending(false);
+        return console.log(result);
+      }
+      setIsPending(false);
       navigate('/login')
-    }, 1500)
-  }
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.id]: e.target.value
-    })
+    } catch (e) {
+      console.error(e)
+      setIsPending(false)
+    }
   }
 
   return (
@@ -50,17 +64,18 @@ const Register = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
-          <form onSubmit={handleRegister} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
               <Input
                 id="name"
                 placeholder="Enter your full name"
-                required
-                value={formData.name}
-                onChange={handleChange}
-                className="bg-background/50"
+                {...register('name')}
+                className={`bg-background/50 ${errors.name ? 'border-destructive focus-visible:ring-destructive' : ''}`}
               />
+              {errors.name && (
+                <p className="text-xs font-medium text-destructive">{errors.name.message}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email Address</Label>
@@ -68,37 +83,40 @@ const Register = () => {
                 id="email"
                 type="email"
                 placeholder="Enter your email"
-                required
-                value={formData.email}
-                onChange={handleChange}
-                className="bg-background/50"
+                {...register('email')}
+                className={`bg-background/50 ${errors.email ? 'border-destructive focus-visible:ring-destructive' : ''}`}
               />
+              {errors.email && (
+                <p className="text-xs font-medium text-destructive">{errors.email.message}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 type="password"
-                required
-                value={formData.password}
-                onChange={handleChange}
                 placeholder="*******"
-                className="bg-background/50"
+                {...register('password')}
+                className={`bg-background/50 ${errors.password ? 'border-destructive focus-visible:ring-destructive' : ''}`}
               />
+              {errors.password && (
+                <p className="text-xs font-medium text-destructive">{errors.password.message}</p>
+              )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm</Label>
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
               <Input
                 id="confirmPassword"
                 type="password"
-                required
-                value={formData.confirmPassword}
-                onChange={handleChange}
                 placeholder="*******"
-                className="bg-background/50"
+                {...register('confirmPassword')}
+                className={`bg-background/50 ${errors.confirmPassword ? 'border-destructive focus-visible:ring-destructive' : ''}`}
               />
+              {errors.confirmPassword && (
+                <p className="text-xs font-medium text-destructive">{errors.confirmPassword.message}</p>
+              )}
             </div>
-            <div className="flex items-start space-x-2 pt-2">
+            {/* <div className="flex items-start space-x-2 pt-2">
               <div className="mt-1 h-4 w-4 rounded-sm border border-border flex items-center justify-center text-primary">
                 <CheckCircle2 size={12} className="opacity-0 hover:opacity-100 transition-opacity" />
               </div>
@@ -107,14 +125,14 @@ const Register = () => {
                 <Link to="#" className="text-primary hover:underline">Terms of Service</Link> and{' '}
                 <Link to="#" className="text-primary hover:underline">Privacy Policy</Link>.
               </p>
-            </div>
+            </div> */}
             <Button
               type="submit"
               className="w-full font-semibold mt-4"
-              isLoading={isLoading}
+              isLoading={isPending}
               leftIcon={<UserPlus size={18} />}
             >
-              {isLoading ? "Creating Account..." : "Get Started"}
+              {isPending ? "Creating Account..." : "Get Started"}
             </Button>
           </form>
         </CardContent>

@@ -1,26 +1,51 @@
-import React, { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { LogIn, Mail, TrendingUp } from 'lucide-react'
+import { LogIn } from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { loginSchema } from "@/lib/auth.schema";
+import type { LoginForm } from "@/lib/auth.schema";
 
 const LoginPage = () => {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
+  const [isPending, setIsPending] = useState(false);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginForm>({
+    resolver: zodResolver(loginSchema),
+    mode: "onChange",
+  });
 
-    // Simulating a login delay
-    setTimeout(() => {
-      setIsLoading(false)
+  const onSubmit = async (data: LoginForm) => {
+    try {
+      setIsPending(true)
+      const res = await fetch("http://localhost:8001/api/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+      })
+
+      const result = await res.json();
+      localStorage.setItem("user", JSON.stringify(result.user));
+
+      setIsPending(false);
       navigate('/dashboard')
-    }, 1500)
+      if (!res.ok) {
+        setIsPending(false);
+        return console.log(result);
+      }
+    } catch (e) {
+
+    }
   }
 
   return (
@@ -39,37 +64,40 @@ const LoginPage = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email Address</Label>
               <Input
                 id="email"
                 type="email"
                 placeholder="abc@example.com"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="bg-background/50"
+                {...register('email')}
+                className={`bg-background/50 ${errors.email ? 'border-destructive focus-visible:ring-destructive' : ''}`}
               />
+              {errors.email && (
+                <p className="text-xs font-medium text-destructive">{errors.email.message}</p>
+              )}
             </div>
             <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder='******'
-                className="bg-background/50"
+                placeholder="******"
+                {...register('password')}
+                className={`bg-background/50 ${errors.password ? 'border-destructive focus-visible:ring-destructive' : ''}`}
               />
+              {errors.password && (
+                <p className="text-xs font-medium text-destructive">{errors.password.message}</p>
+              )}
             </div>
             <Button
               type="submit"
               className="w-full font-semibold"
-              isLoading={isLoading}
+              isLoading={isPending}
               leftIcon={<LogIn size={18} />}
             >
-              {isLoading ? "Processing..." : "Sign In"}
+              {isPending ? "Processing..." : "Sign In"}
             </Button>
           </form>
         </CardContent>

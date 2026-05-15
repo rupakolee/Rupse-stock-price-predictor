@@ -1,1 +1,0 @@
-export { navConfig } from './navConfig';

@@ -7,8 +7,6 @@ import marketRoute from "./routes/market.route.js"
 
 const app = express();
 
-mongoose.connect("mongodb://127.0.0.1:27017/stock-price-predictor")
-
 app.use(cors());
 app.use(express.json());
 

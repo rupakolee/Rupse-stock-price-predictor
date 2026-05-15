@@ -1,1 +1,5 @@
-export { default as DashboardHome } from './DashboardHome';
+export { default as DashboardHome }   from './DashboardHome'
+export { default as FundamentalPage } from './FundamentalPage'
+export { default as AnalyticsPage }   from './AnalyticsPage'
+export { default as PredictionsPage } from './PredictionsPage'
+export { default as UsersPage }       from './UsersPage'
