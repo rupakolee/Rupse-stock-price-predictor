@@ -61,7 +61,12 @@ def load_stock_data(
     # ── 1. Return cached data if available ──────────────────────────────────
     if cache_file.exists():
         print(f"[data_loader] Loading cached data from {cache_file}")
-        df = pd.read_csv(cache_file, parse_dates=["Date"])
+        df = pd.read_csv(cache_file)
+        # Parse Date robustly — handles both naive and tz-offset strings
+        df["Date"] = pd.to_datetime(df["Date"], utc=True).dt.tz_localize(None)
+        # Keep only OHLCV columns
+        keep = [c for c in _OHLCV_COLS if c in df.columns]
+        df = df[keep]
         return df
 
     # ── 2. Download with retry logic ─────────────────────────────────────────

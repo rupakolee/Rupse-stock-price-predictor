@@ -1,45 +1,49 @@
 import numpy as np
-from sklearn.metrics import accuracy_score, classification_report
 
 
 def evaluate_model(
-    model,
-    X_test: np.ndarray,
-    y_test: np.ndarray,
-    threshold: float = 0.5,
+    preds_price: np.ndarray,   # predicted next-day closing prices (dollars)
+    actual_price: np.ndarray,  # actual next-day closing prices (dollars)
     label: str = "Model",
 ) -> np.ndarray:
     """
-    Evaluate a classifier and print a summary report.
-
-    Works for both sklearn models (predict returns class labels) and
-    Keras models (predict returns probabilities).
+    Evaluate price predictions and report error metrics in dollar terms.
 
     Parameters
     ----------
-    model     : fitted sklearn or Keras model
-    X_test    : test features
-    y_test    : true labels
-    threshold : probability cut-off for Keras sigmoid output
-    label     : display name printed in the header
+    preds_price  : 1-D array of predicted next-day closing prices
+    actual_price : 1-D array of actual next-day closing prices
+    label        : display name
 
     Returns
     -------
-    preds : 1-D integer array of predicted class labels
+    preds_price : same array passed in (for chaining)
     """
-    raw = model.predict(X_test)
+    preds_price  = np.asarray(preds_price).flatten()
+    actual_price = np.asarray(actual_price).flatten()
 
-    # Keras returns a 2-D probability array; sklearn returns class labels directly
-    if raw.ndim == 2 or (raw.ndim == 1 and raw.dtype == float and raw.max() <= 1.0):
-        preds = (raw.flatten() >= threshold).astype(int)
-    else:
-        preds = raw.astype(int).flatten()
+    mae  = np.mean(np.abs(preds_price - actual_price))
+    rmse = np.sqrt(np.mean((preds_price - actual_price) ** 2))
+    mask = actual_price != 0
+    mape = np.mean(np.abs((preds_price[mask] - actual_price[mask]) / actual_price[mask])) * 100
 
-    print(f"\n{'='*50}")
+    # Direction accuracy: did the model predict the correct sign of the move?
+    # Compare predicted next-day price vs the current day's close (shifted actual)
+    actual_direction = np.sign(np.diff(actual_price, prepend=actual_price[0]))
+    pred_direction   = np.sign(preds_price - np.roll(actual_price, 1))
+    pred_direction[0] = 0  # first element has no prior reference
+    dir_acc = np.mean(actual_direction[1:] == pred_direction[1:]) * 100
+
+    print(f"\n{'='*52}")
     print(f"  {label} Evaluation")
-    print(f"{'='*50}")
-    print(f"Accuracy : {accuracy_score(y_test, preds):.4f}")
-    print("\nClassification Report:")
-    print(classification_report(y_test, preds, target_names=["Down", "Up"], zero_division=0))
+    print(f"{'='*52}")
+    print(f"  Price MAE  (mean absolute error): ${mae:.2f}")
+    print(f"  Price RMSE (root mean sq error) : ${rmse:.2f}")
+    print(f"  Price MAPE (mean abs % error)   : {mape:.2f}%")
+    print(f"  Direction accuracy              : {dir_acc:.2f}%")
+    print(f"\n  Last 5 predictions vs actuals:")
+    print(f"  {'Predicted':>12}  {'Actual':>10}  {'Error':>10}")
+    for p, a in zip(preds_price[-5:], actual_price[-5:]):
+        print(f"  ${p:>11.2f}  ${a:>9.2f}  ${p - a:>+9.2f}")
 
-    return preds
+    return preds_price

@@ -1,89 +1,31 @@
 """
-Stock Price Direction Predictor
-================================
-Trains two models on historical OHLCV data:
-  1. Random Forest  — flat feature vector per day
-  2. LSTM           — sliding window of feature sequences
+Stock Price Predictor
+======================
+Trains a Bidirectional LSTM on historical OHLCV data to predict tomorrow's
+closing price.
 
-Both models predict: will tomorrow's Close be higher than today's?
+Strategy
+--------
+The model predicts tomorrow's % return (a stationary, scale-invariant target).
+The predicted closing price is then reconstructed as:
+    predicted_price = today_close * (1 + predicted_return)
+
+This avoids the systematic underestimation that occurs when predicting raw
+prices on a trending asset — a model trained on $40–$150 prices will never
+correctly predict $290 prices, but % returns are always small numbers near 0
+regardless of the absolute price level.
 """
 
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 
-from config import TICKER, TRAIN_SPLIT, WINDOW_SIZE, RF_FEATURES, LSTM_FEATURES
+from config import TICKER, TRAIN_SPLIT, WINDOW_SIZE, LSTM_FEATURES, TARGET
 from src.data_loader import load_stock_data
 from src.features import create_features
 from src.dataset import create_sequences
-from src.model import train_model
 from src.model_lstm import build_lstm, get_callbacks
 from src.evaluate import evaluate_model
 from src.backtest import backtest
-
-
-def run_random_forest(df: "pd.DataFrame") -> None:
-    print("\n" + "#" * 50)
-    print("  RANDOM FOREST")
-    print("#" * 50)
-
-    X = df[RF_FEATURES].values
-    y = df["target"].values
-
-    split = int(len(df) * TRAIN_SPLIT)
-    X_train, X_test = X[:split], X[split:]
-    y_train, y_test = y[:split], y[split:]
-
-    model = train_model(X_train, y_train)
-    preds = evaluate_model(model, X_test, y_test, label="Random Forest")
-
-    # Align the test slice of df with predictions
-    df_test = df.iloc[split:].copy().reset_index(drop=True)
-    backtest(df_test, preds, label="Random Forest")
-
-
-def run_lstm(df: "pd.DataFrame") -> None:
-    print("\n" + "#" * 50)
-    print("  LSTM")
-    print("#" * 50)
-
-    scaler = MinMaxScaler()
-    X_scaled = scaler.fit_transform(df[LSTM_FEATURES].values)
-    y = df["target"].values
-
-    X_seq, y_seq = create_sequences(X_scaled, y, window_size=WINDOW_SIZE)
-
-    split = int(len(X_seq) * TRAIN_SPLIT)
-    X_train, X_test = X_seq[:split], X_seq[split:]
-    y_train, y_test = y_seq[:split], y_seq[split:]
-
-    # Compute class weights to handle imbalance
-    n_neg = int((y_train == 0).sum())
-    n_pos = int((y_train == 1).sum())
-    total = n_neg + n_pos
-    class_weight = {0: total / (2 * n_neg), 1: total / (2 * n_pos)}
-
-    model = build_lstm(input_shape=(X_train.shape[1], X_train.shape[2]))
-    model.summary()
-
-    model.fit(
-        X_train,
-        y_train,
-        epochs=50,
-        batch_size=32,
-        validation_data=(X_test, y_test),
-        callbacks=get_callbacks(),
-        class_weight=class_weight,
-        verbose=1,
-    )
-
-    preds = evaluate_model(model, X_test, y_test, label="LSTM")
-
-    # The sequence window shifts the index by WINDOW_SIZE rows.
-    # X_seq[i] corresponds to df row (WINDOW_SIZE + i).
-    # The test slice starts at (WINDOW_SIZE + split).
-    df_test_start = WINDOW_SIZE + split
-    df_test = df.iloc[df_test_start : df_test_start + len(y_test)].copy().reset_index(drop=True)
-    backtest(df_test, preds, label="LSTM")
 
 
 def main() -> None:
@@ -94,6 +36,7 @@ def main() -> None:
     df = create_features(df)
 
     print(f"Dataset size after feature engineering: {len(df)} rows")
+    print(f"Features ({len(LSTM_FEATURES)}): {', '.join(LSTM_FEATURES)}")
 
     if df.empty:
         raise RuntimeError(
@@ -101,8 +44,56 @@ def main() -> None:
             "Check that the download succeeded and the date range is valid."
         )
 
-    run_random_forest(df)
-    run_lstm(df)
+    # ── Scale features ────────────────────────────────────────────────────────
+    # Features are scaled to [0,1]; target (% return) is NOT scaled —
+    # returns are already small numbers (~-0.05 to +0.05).
+    feat_scaler = MinMaxScaler()
+    X_scaled = feat_scaler.fit_transform(df[LSTM_FEATURES].values)
+    y = df[TARGET].values  # raw % returns, unscaled
+
+    # ── Build sequences ───────────────────────────────────────────────────────
+    X_seq, y_seq = create_sequences(X_scaled, y, window_size=WINDOW_SIZE)
+
+    split = int(len(X_seq) * TRAIN_SPLIT)
+    X_train, X_test = X_seq[:split], X_seq[split:]
+    y_train, y_test = y_seq[:split], y_seq[split:]
+
+    # today_close[i] = Close on the last day of window i
+    # Used to reconstruct: predicted_price = today_close * (1 + predicted_return)
+    closes = df["Close"].values
+    today_closes = closes[WINDOW_SIZE - 1 : WINDOW_SIZE - 1 + len(X_seq)]
+    today_closes_test = today_closes[split:]
+
+    # ── Train ─────────────────────────────────────────────────────────────────
+    print("\n" + "#" * 52)
+    print("  LSTM — next-day return → price prediction")
+    print("#" * 52)
+
+    model = build_lstm(input_shape=(X_train.shape[1], X_train.shape[2]))
+    model.summary()
+
+    model.fit(
+        X_train,
+        y_train,
+        epochs=60,
+        batch_size=32,
+        validation_data=(X_test, y_test),
+        callbacks=get_callbacks(),
+        verbose=1,
+    )
+
+    # ── Predict & reconstruct prices ──────────────────────────────────────────
+    pred_returns = model.predict(X_test, verbose=0).flatten()
+    preds_price  = today_closes_test * (1 + pred_returns)
+    actual_price = today_closes_test * (1 + y_test)
+
+    # ── Evaluate ──────────────────────────────────────────────────────────────
+    preds_price = evaluate_model(preds_price, actual_price, label="LSTM")
+
+    # ── Backtest ──────────────────────────────────────────────────────────────
+    df_test_start = WINDOW_SIZE - 1 + split
+    df_test = df.iloc[df_test_start : df_test_start + len(y_test)].copy().reset_index(drop=True)
+    backtest(df_test, preds_price, label="LSTM")
 
 
 if __name__ == "__main__":
