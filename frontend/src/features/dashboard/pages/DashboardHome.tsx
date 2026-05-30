@@ -1,32 +1,148 @@
-import React from 'react'
+import { useState, useMemo } from 'react'
+import { Search } from 'lucide-react'
+import { useGetMarketDataByTicker } from '@/server-action/api/market.api'
+import type { MarketValue } from '@/types/market'
+import StockChart from '../chart/index.jsx'
+import { StockLoader } from '@/components/ui'
+
+
+const getStartDate = (months: number) => {
+    const d = new Date()
+    d.setMonth(d.getMonth() - months)
+    return d
+}
+
+const buildChartData = (values: MarketValue[], months: number) => {
+    const startDate = getStartDate(months)
+    const filtered = values
+        .filter(v => new Date(v.datetime) >= startDate)
+        .reverse()
+
+    return filtered.map((item, idx, arr) => {
+        const prev = arr[idx - 1]
+        const close = parseFloat(item.close)
+        const change = prev ? close - parseFloat(prev.close) : 0
+        const date = new Date(item.datetime)
+        const time = months <= 3
+            ? date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+            : date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
+
+        return {
+            time,
+            rawDate: item.datetime,
+            value: close,
+            open: parseFloat(item.open),
+            high: parseFloat(item.high),
+            low: parseFloat(item.low),
+            change,
+        }
+    })
+}
 
 const DashboardHome = () => {
+    const [ticker, setTicker] = useState('AAPL')
+    const [input, setInput] = useState('AAPL')
+    const [months, setMonths] = useState(12)
+
+    const { data, isLoading, error } = useGetMarketDataByTicker(ticker)
+
+    const chartData = useMemo(() => {
+        if (!data?.values?.length) return []
+        return buildChartData(data.values, months)
+    }, [data, months])
+
+    const trendColor = useMemo(() => {
+        if (chartData.length < 2) return '#6B7280'
+        const pct = ((chartData.at(-1)!.value - chartData[0].value) / chartData[0].value) * 100
+        if (pct > 0.5) return '#10b981'
+        if (pct < -0.5) return '#ef4444'
+        return '#6B7280'
+    }, [chartData])
+
+    const latest = data?.values?.[0]
+    const latestClose = latest ? parseFloat(latest.close) : null
+    const prevClose = data?.values?.[1] ? parseFloat(data.values[1].close) : null
+    const dayChange = latestClose && prevClose ? latestClose - prevClose : null
+    const dayChangePct = dayChange && prevClose ? (dayChange / prevClose) * 100 : null
+
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault()
+        if (input.trim()) setTicker(input.trim().toUpperCase())
+    }
+
     return (
         <div className="space-y-6">
-            <div>
-                <h2 className="text-2xl font-bold tracking-tight text-foreground">Overview</h2>
-                <p className="text-muted-foreground">Monitor your real-time market performance.</p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h2 className="text-xl font-bold tracking-tight">Overview</h2>
+                    <p className="text-sm text-muted-foreground">Monitor your real-time market performance.</p>
+                </div>
+                <form onSubmit={handleSearch} className="flex gap-2">
+                    <div className="relative">
+                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                        <input
+                            value={input}
+                            onChange={e => setInput(e.target.value.toUpperCase())}
+                            placeholder="TSLA"
+                            className="pl-8 pr-3 py-2 text-sm rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary w-28"
+                        />
+                    </div>
+                    <button type="submit" className="px-4 py-2 text-sm font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
+                        Search
+                    </button>
+                </form>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
-                    <h3 className="text-sm font-medium text-muted-foreground mb-4">Total Assets</h3>
-                    <div className="text-2xl font-bold text-foreground">$124,500.00</div>
-                    <div className="text-xs text-primary mt-2">+12.5% vs last month</div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-card p-4 rounded-xl border border-border">
+                    <p className="text-xs text-muted-foreground mb-1">{data?.meta?.symbol ?? ticker} - Latest Close</p>
+                    <p className="text-xl font-bold text-white">{latestClose ? `$${latestClose.toFixed(2)}` : '—'}</p>
+                    {dayChangePct !== null && (
+                        <p className={`text-xs mt-1 ${dayChangePct >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                            {dayChangePct >= 0 ? '+' : ''}{dayChangePct.toFixed(2)}% today
+                        </p>
+                    )}
                 </div>
-                <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
-                    <h3 className="text-sm font-medium text-muted-foreground mb-4">Daily Profit</h3>
-                    <div className="text-2xl font-bold text-primary">+$1,240.50</div>
-                    <div className="text-xs text-muted-foreground mt-2">Active trades: 4</div>
+                <div className="bg-card p-4 rounded-xl border border-border">
+                    <p className="text-xs text-muted-foreground mb-1">Exchange</p>
+                    <p className="text-xl font-bold text-white">{data?.meta?.exchange ?? '—'}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{data?.meta?.currency ?? ''}</p>
                 </div>
-                <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
-                    <h3 className="text-sm font-medium text-muted-foreground mb-4">Market Sentiment</h3>
-                    <div className="text-2xl font-bold text-foreground">Bullish</div>
-                    <div className="text-xs text-muted-foreground mt-2">AI Confidence: 88%</div>
+                <div className="bg-card p-4 rounded-xl border border-border">
+                    <p className="text-xs text-muted-foreground mb-1">Data Points</p>
+                    <p className="text-xl font-bold text-white">{data?.values?.length ?? '—'}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Daily intervals</p>
                 </div>
             </div>
+
+            {isLoading && (
+                <StockLoader />
+            )}
+            {error && (
+                <div className="bg-card rounded-xl border border-border p-8 text-center text-destructive text-sm">
+                    {String(error).includes("TWELVE_DATA_API_KEY") ? (
+                        <div>
+                            <p className="font-medium">Server configuration required</p>
+                            <p className="text-xs mt-2">The backend is missing the Twelve Data API key which is required to fetch market data.</p>
+                            <p className="text-xs mt-2">To fix locally, add <code>TWELVE_DATA_API_KEY=your_api_key</code> to <strong>backend/.env</strong> and restart the backend server.</p>
+                        </div>
+                    ) : (
+                        <div>
+                            Error: {String(error)}
+                        </div>
+                    )}
+                </div>
+            )}
+            {!isLoading && !error && (
+                <StockChart
+                    chartData={chartData}
+                    trendColor={trendColor}
+                    symbol={data?.meta?.symbol ?? ticker}
+                    onRangeChange={setMonths}
+                />
+            )}
         </div>
-    );
-};
+    )
+}
 
-export default DashboardHome;
+export default DashboardHome

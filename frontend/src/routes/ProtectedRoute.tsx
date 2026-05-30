@@ -1,31 +1,17 @@
-import GlobalLoader from "@/pages/GlobalLoader";
-import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
 
-interface ProtecteRouteProps {
-    allowedRoles?: string[];
-}
+const ProtectedRoute = ({ allowedRoles }) => {
+  const user = localStorage.getItem("user");
 
+  if (!user || user === null) {
+    return <Navigate to="/login" replace />;
+  }
 
-const ProtecteRoute = ({ allowedRoles }: ProtecteRouteProps) => {
-    const location = useLocation();
+  // if (!allowedRoles.includes(user.role)) {
+  //   return <Navigate to="/unauthorized" replace />;
+  // }
 
-    const { isAuthenticated, userRole, loading } = {
-        isAuthenticated: true,
-        userRole: "admin",
-        loading: false,
-    };
+  return <Outlet />;
+};
 
-    if (loading) return <GlobalLoader />
-
-    if (!isAuthenticated) {
-        return <Navigate to="/login" state={{ from: location }} replace />
-    }
-
-    if (!userRole && !allowedRoles?.includes(userRole)) {
-        return <Navigate to="/unauthorized" replace />
-    }
-
-    return <Outlet />
-}
-
-export default ProtecteRoute;
+export default ProtectedRoute;

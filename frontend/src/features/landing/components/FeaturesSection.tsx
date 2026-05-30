@@ -43,13 +43,13 @@ const features: Feature[] = [
 
 const FeaturesSection: React.FC = () => {
   return (
-    <section className="bg-background py-24 px-6 text-foreground">
+    <section id="features" className="py-20 px-6 text-foreground">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Powerful Features at Your Fingertips</h2>
-          <div className="h-1 w-20 bg-primary mx-auto mb-6 rounded-full" />
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Everything you need to make smarter investment decisions, powered by AI and real-time data.
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-extrabold mb-3">What you get</h2>
+          <div className="h-1 w-24 bg-primary mx-auto mb-6 rounded-full" />
+          <p className="text-slate-400 max-w-2xl mx-auto">
+            Seamless predictions, clear signals, and real-time alerts — all in one elegant dashboard.
           </p>
         </div>
 
@@ -57,13 +57,15 @@ const FeaturesSection: React.FC = () => {
           {features.map((feature, index) => (
             <div
               key={`${feature.title}-${index}`}
-              className="group bg-card rounded-2xl p-8 border border-border hover:border-primary/30 hover:shadow-[0_0_30px_rgba(0,255,163,0.1)] transition-all duration-300"
+              className="group bg-gradient-to-b from-slate-800/60 to-slate-800/40 rounded-2xl p-6 border border-slate-700 transform hover:-translate-y-2 hover:shadow-2xl transition-all duration-300"
             >
-              <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 mb-6 group-hover:scale-110 transition-transform">
-                {feature.icon}
+              <div className="flex items-center gap-4 mb-4">
+                <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition">
+                  {feature.icon}
+                </div>
+                <h3 className="text-lg font-semibold">{feature.title}</h3>
               </div>
-              <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{feature.desc}</p>
+              <p className="text-sm text-slate-300 leading-relaxed">{feature.desc}</p>
             </div>
           ))}
         </div>

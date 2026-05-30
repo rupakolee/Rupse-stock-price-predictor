@@ -1,33 +1,33 @@
 /* src/styles/tokens.css */
 :root {
-  /* Brand Colors */
-  --color-primary:        #6366f1;   /* Indigo */
-  --color-primary-hover:  #4f46e5;
-  --color-secondary:      #8b5cf6;   /* Violet */
-  --color-accent:         #06b6d4;   /* Cyan */
+  /* Bright Brand Colors (Rupse - Light Theme) */
+  --color-primary:        #06b6d4;   /* Bright Cyan */
+  --color-primary-hover:  #0891b2;
+  --color-secondary:      #ffb020;   /* Warm Amber */
+  --color-accent:         #7c3aed;   /* Vibrant Violet */
 
   /* Semantic Colors */
-  --color-success:        #10b981;
+  --color-success:        #16a34a;
   --color-warning:        #f59e0b;
   --color-danger:         #ef4444;
-  --color-info:           #3b82f6;
+  --color-info:           #0284c7;
 
   /* Stock Chart Specific */
-  --color-bull:           #22c55e;   /* Green (price up) */
-  --color-bear:           #ef4444;   /* Red (price down) */
+  --color-bull:           #16a34a;   /* Green (price up) */
+  --color-bear:           #dc2626;   /* Red (price down) */
 
-  /* Backgrounds */
-  --color-bg:             #0f0f1a;
-  --color-bg-card:        #1a1a2e;
-  --color-bg-surface:     #16213e;
+  /* Backgrounds (light) */
+  --color-bg:             #f8fafc;
+  --color-bg-card:        #ffffff;
+  --color-bg-surface:     #f1f5f9;
 
-  /* Text */
-  --color-text-primary:   #f1f5f9;
-  --color-text-secondary: #94a3b8;
-  --color-text-muted:     #475569;
+  /* Text (dark on light background) */
+  --color-text-primary:   #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-muted:     #6b7280;
 
   /* Borders */
-  --color-border:         #1e293b;
+  --color-border:         #e6eef2;
   --color-border-focus:   var(--color-primary);
 
   /* Typography */
