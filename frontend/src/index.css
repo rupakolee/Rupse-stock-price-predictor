@@ -5,6 +5,11 @@
 
 @custom-variant dark (&:is(.dark *));
 
+:root {
+  --destructive: oklch(0.6 0.225 28.3);
+  --destructive-foreground: oklch(0.985 0 0);
+}
+
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: "Inter Variable", sans-serif;

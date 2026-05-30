@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import logo from "../../../assets/logo1.png";
+// Use the new public SVG logo (served from /logo.svg)
+const logo = '/logo.svg';
 
 interface NavLink {
     name: string;
@@ -22,8 +23,8 @@ const Navbar: React.FC = () => {
                 <Link to="/" className="flex items-center">
                     <img
                         src={logo}
-                        alt="Company Logo"
-                        className="w-20 h-20 object-contain hover:opacity-80 transition-opacity"
+                        alt="Rupse Logo"
+                        className="w-14 h-14 object-contain hover:opacity-80 transition-opacity"
                     />
                 </Link>
 

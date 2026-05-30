@@ -14,7 +14,7 @@ const Footer: React.FC = () => {
 
         {/* Brand + Description */}
         <div className="space-y-6">
-          <h2 className="text-2xl font-bold tracking-tight text-primary">NuroStock</h2>
+          <h2 className="text-2xl font-bold tracking-tight text-primary">Rupse</h2>
           <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
             State-of-the-art AI-powered stock forecasting tool that empowers your investment journey with precision and confidence.
           </p>
@@ -71,11 +71,7 @@ const Footer: React.FC = () => {
 
       <div className="max-w-7xl mx-auto border-t border-border mt-16 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-muted-foreground">
         <div>
-          © 2025 <span className="text-primary font-bold">NuroStock</span>. Empowering traders everywhere.
-        </div>
-        <div className="flex gap-6">
-          <a href="#" className="hover:text-primary">Privacy Policy</a>
-          <a href="#" className="hover:text-primary">Terms of Service</a>
+          © 2025 <span className="text-primary font-bold">Rupse</span>. Empowering traders everywhere.
         </div>
       </div>
     </footer>

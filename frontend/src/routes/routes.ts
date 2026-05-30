@@ -1,39 +1,24 @@
-import React,{ lazy } from 'react';
+/**
+ * ROUTES — single source of truth for all route paths.
+ * Import this wherever you need to navigate or guard.
+ */
+export const ROUTES = {
+    // Public
+    HOME:         "/",
+    UNAUTHORIZED: "/unauthorized",
+    SERVER_ERROR: "/server-error",
 
- const LoginPage = lazy(() => import('@/features/auth/LoginPage'));
- const RegisterPage = lazy(() => import('@/features/auth/RegisterPage'));
+    // Auth (guest only)
+    LOGIN:    "/login",
+    REGISTER: "/register",
 
-const routes =[
-    {
-        name: "Dashboard",
-        key: "dashboard",
-        route: "/dashboard",
-        icon: React.createElement("i", { className: "fas fa-tachometer-alt" }),
-        buttonLabel: "Dashboard",
-    },
-    {
-        name: "Profile",
-        key: "profile",
-        route: "/profile",
-        icon: React.createElement("i", { className: "fas fa-user" }),
-        buttonLabel: "Profile",
-    },
-    {
-        name: "Predictions",
-        key: "predictions",
-        route: "/predictions",
-        icon: React.createElement("i", { className: "fas fa-chart-line" }),
-        buttonLabel: "Predictions",
-    },
-    {
-        name: "Settings",
-        key: "settings",
-        route: "/settings",
-        icon: React.createElement("i", { className: "fas fa-cog" }),
-        buttonLabel: "Settings",
-    },
+    // Protected
+    DASHBOARD:   "/dashboard",
+    FUNDAMENTAL: "/dashboard/fundamental",
+    ANALYTICS:   "/dashboard/analytics",
+    PREDICTIONS: "/dashboard/predictions",
+    PROFILE:     "/dashboard/profile",
+    SETTINGS:    "/dashboard/settings",
+} as const;
 
-    //Auth fallback routes
-    {type: "route", key: "login", route: "/login" ,component : LoginPage},
-    {type: "auth", key: "register", route: "/register",component: RegisterPage},
-]
+export type AppRoute = (typeof ROUTES)[keyof typeof ROUTES];
