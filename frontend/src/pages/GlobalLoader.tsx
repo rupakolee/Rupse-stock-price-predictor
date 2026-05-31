@@ -1,8 +1,10 @@
-import React from 'react'
+import StockLoader from "@/components/ui/StockLoader"
 
 const GlobalLoader = () => {
     return (
-        <div>GlobalLoader</div>
+        <div className="flex min-h-screen items-center justify-center px-4 py-8">
+            <StockLoader />
+        </div>
     )
 }
 
