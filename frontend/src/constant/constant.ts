@@ -1,6 +1,7 @@
 
 export const API_ENDPOINTS = {
   FUNDAMENTAL: "fundamental",
+  PREDICTION: "prediction",
   MARKET:"market",
 
 } as const;

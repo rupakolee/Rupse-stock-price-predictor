@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import authRoute from "./routes/auth.route.js"
 import fundamentalRoute from "./routes/fundamental.route.js"
+import predictionRoute from "./routes/prediction.route.js"
 import marketRoute from "./routes/market.route.js"
 // import routes from "./api/route.js";
 
@@ -12,6 +13,7 @@ app.use(express.json());
 
 app.use("/api", authRoute);
 app.use("/api/fundamental", fundamentalRoute);
+app.use("/api/prediction", predictionRoute);
 app.use("/api/market", marketRoute);
 
 

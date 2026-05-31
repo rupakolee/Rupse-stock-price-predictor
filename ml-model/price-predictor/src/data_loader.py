@@ -1,5 +1,6 @@
 import time
 import pathlib
+import sys
 import pandas as pd
 import yfinance as yf
 from config import START_DATE
@@ -60,7 +61,7 @@ def load_stock_data(
 
     # ── 1. Return cached data if available ──────────────────────────────────
     if cache_file.exists():
-        print(f"[data_loader] Loading cached data from {cache_file}")
+        print(f"[data_loader] Loading cached data from {cache_file}", file=sys.stderr)
         df = pd.read_csv(cache_file)
         # Parse Date robustly — handles both naive and tz-offset strings
         df["Date"] = pd.to_datetime(df["Date"], utc=True).dt.tz_localize(None)
@@ -72,23 +73,23 @@ def load_stock_data(
     # ── 2. Download with retry logic ─────────────────────────────────────────
     df = pd.DataFrame()
     for attempt in range(1, max_retries + 1):
-        print(f"[data_loader] Downloading {ticker} (attempt {attempt}/{max_retries})...")
+        print(f"[data_loader] Downloading {ticker} (attempt {attempt}/{max_retries})...", file=sys.stderr)
         try:
             df = _download(ticker)
             if not df.empty:
                 break
-            print(f"[data_loader] Empty response on attempt {attempt}.")
+            print(f"[data_loader] Empty response on attempt {attempt}.", file=sys.stderr)
         except Exception as exc:
-            print(f"[data_loader] Error on attempt {attempt}: {exc}")
+            print(f"[data_loader] Error on attempt {attempt}: {exc}", file=sys.stderr)
 
         if attempt < max_retries:
-            print(f"[data_loader] Waiting {retry_delay}s before retry...")
+            print(f"[data_loader] Waiting {retry_delay}s before retry...", file=sys.stderr)
             time.sleep(retry_delay)
 
     # ── 3. Cache to disk if we got data ──────────────────────────────────────
     if not df.empty:
         df.to_csv(cache_file, index=False)
-        print(f"[data_loader] Saved to cache: {cache_file}")
+        print(f"[data_loader] Saved to cache: {cache_file}", file=sys.stderr)
     else:
         raise RuntimeError(
             f"Could not download data for '{ticker}' after {max_retries} attempts.\n"
