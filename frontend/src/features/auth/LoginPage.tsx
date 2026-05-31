@@ -1,5 +1,6 @@
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,10 +10,12 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { loginSchema } from "@/lib/auth.schema";
 import type { LoginForm } from "@/lib/auth.schema";
+import { QUERY_KEYS, TOKEN_KEY, USER_KEY } from '@/constant/constant'
 import { ROUTES } from '@/routes/routes'
 
 const LoginPage = () => {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [isPending, setIsPending] = useState(false);
 
   const {
@@ -44,8 +47,10 @@ const LoginPage = () => {
         return;
       }
 
-      // Persist user on success and navigate
-      localStorage.setItem("user", JSON.stringify(result.user));
+      // Persist auth data on success so the profile page can hydrate from cache.
+      localStorage.setItem(TOKEN_KEY, result.token);
+      localStorage.setItem(USER_KEY, JSON.stringify(result.user));
+      queryClient.setQueryData([QUERY_KEYS.AUTH], result);
       setIsPending(false);
       navigate(ROUTES.DASHBOARD)
     } catch (e) {

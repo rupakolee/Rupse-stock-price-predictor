@@ -3,8 +3,8 @@ import Fundamental from "../model/fundamental.model.js";
 
 const THREE_MONTHS = 1000 * 60 * 60 * 24 * 90;
 export const fetchFundamental = async (req, res) => {
-  const API_URL = process.env.API_URL;
-  const API_KEY = process.env.API_KEY;
+  const API_URL = process.env.FUNDAMENTAL_API_URL || "https://www.alphavantage.co/query";
+  const API_KEY = process.env.TWELVE_DATA_API_KEY;
 
   const symbol = req.params?.symbol?.trim()?.toUpperCase();
 
@@ -34,6 +34,22 @@ export const fetchFundamental = async (req, res) => {
       });
     }
 
+    if (!API_KEY) {
+      if (cachedData?.data) {
+        return res.status(200).json({
+          success: true,
+          message: "Company overview data fetched from cache (API key not configured)",
+          data: cachedData.data,
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      return res.status(500).json({
+        success: false,
+        error: "Server misconfiguration: TWELVE_DATA_API_KEY is not set",
+      });
+    }
+
     const response = await axios.get(API_URL, {
       params: {
         function: "OVERVIEW",
@@ -44,7 +60,7 @@ export const fetchFundamental = async (req, res) => {
 
     const apiData = response.data;
 
-    if (!apiData.Symbol) {
+    if (!apiData || !apiData.Symbol) {
       return res.status(404).json({
         error: "No data found for this symbol",
       });

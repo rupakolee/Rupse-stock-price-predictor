@@ -21,10 +21,10 @@
       const token = localStorage.getItem(TOKEN_KEY);
       const userRaw = localStorage.getItem(USER_KEY);
 
-      if (token && userRaw) {
+      if (userRaw) {
         try {
           const user = JSON.parse(userRaw);
-          queryClient.setQueryData<AuthData>([QUERY_KEYS.AUTH], { token, user });
+          queryClient.setQueryData<AuthData>([QUERY_KEYS.AUTH], { token: token || "", user });
         } catch (e) {
           console.error("[AuthProvider] Failed to parse user from localStorage", e);
           localStorage.removeItem(TOKEN_KEY);
