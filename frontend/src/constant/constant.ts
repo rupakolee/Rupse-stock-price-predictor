@@ -2,8 +2,9 @@
 export const API_ENDPOINTS = {
   FUNDAMENTAL: "fundamental",
   PREDICTION: "prediction",
-  MARKET:"market",
-
+  MARKET: "market",
+  SENTIMENT: "sentiment",
+  NEWS: "news",
 } as const;
 
 export const USER_ROLE ={

@@ -276,7 +276,7 @@ const PredictionsPage = () => {
                     <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
                         <div className="flex items-center justify-between gap-3">
                             <div>
-                                <h3 className="text-lg font-semibold">Actual vs Predicted Price</h3>
+                                <h3 className="text-lg font-semibold text-black">Actual vs Predicted Price</h3>
                                 <p className="text-sm text-muted-foreground">
                                     Historical closes in blue, forecast path in amber.
                                 </p>
@@ -293,7 +293,7 @@ const PredictionsPage = () => {
                         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
                             <div className="flex items-center justify-between gap-3">
                                 <div>
-                                    <h3 className="text-lg font-semibold">Scenario Path</h3>
+                                    <h3 className="text-lg font-semibold text-black">Scenario Path</h3>
                                     <p className="text-sm text-muted-foreground">
                                         Base, bullish, and bearish projections for the next {data.horizonDays} trading day(s).
                                     </p>
@@ -329,12 +329,12 @@ const PredictionsPage = () => {
                             <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
                                 <div className="flex items-center gap-2">
                                     <Brain className="h-5 w-5 text-primary" />
-                                    <h3 className="text-lg font-semibold">Model Lens</h3>
+                                    <h3 className="text-lg font-semibold text-black">Model Lens</h3>
                                 </div>
 
                                 <div className="mt-4 space-y-4">
                                     <div className="rounded-xl border border-border/70 bg-background p-4">
-                                        <p className="font-medium">Trend strength</p>
+                                        <p className="font-medium text-muted-foreground">Trend strength</p>
                                         <p className="mt-2 text-sm text-muted-foreground">
                                             {data.momentum >= 0
                                                 ? 'Recent prices are trading above the short-term average, which supports the upside case.'
@@ -343,14 +343,14 @@ const PredictionsPage = () => {
                                     </div>
 
                                     <div className="rounded-xl border border-border/70 bg-background p-4">
-                                        <p className="font-medium">Risk check</p>
+                                        <p className="font-medium text-muted-foreground">Risk check</p>
                                         <p className="mt-2 text-sm text-muted-foreground">
                                             The prediction widens when volatility increases, so a wide band means the ticker is still moving aggressively.
                                         </p>
                                     </div>
 
                                     <div className="rounded-xl border border-border/70 bg-background p-4">
-                                        <p className="font-medium">Reference window</p>
+                                        <p className="font-medium text-muted-foreground">Reference window</p>
                                         <p className="mt-2 text-sm text-muted-foreground">
                                             Built from the most recent {data.recentCount} sessions ending on {new Date(data.latestDate).toLocaleDateString('en-US', {
                                                 month: 'short',
@@ -365,7 +365,7 @@ const PredictionsPage = () => {
                             <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
                                 <div className="flex items-center gap-2">
                                     <Target className="h-5 w-5 text-primary" />
-                                    <h3 className="text-lg font-semibold">Decision Snapshot</h3>
+                                    <h3 className="text-lg font-semibold text-black">Decision Snapshot</h3>
                                 </div>
 
                                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -398,22 +398,22 @@ const PredictionsPage = () => {
                                 <Activity className="h-4 w-4" />
                             </div>
                             <div>
-                                <h3 className="text-lg font-semibold">How to read this page</h3>
+                                <h3 className="text-lg font-semibold text-black">How to read this page</h3>
                                 <p className="text-sm text-muted-foreground">This is a directional forecast panel, not a guarantee.</p>
                             </div>
                         </div>
 
                         <div className="mt-4 grid gap-4 md:grid-cols-3">
                             <div className="rounded-xl border border-border/70 bg-background p-4">
-                                <p className="font-medium">Bull case</p>
+                                <p className="font-medium text-emerald-400">Bull case</p>
                                 <p className="mt-2 text-sm text-muted-foreground">Use the bullish path when momentum is holding above the short-term average and volatility stays contained.</p>
                             </div>
                             <div className="rounded-xl border border-border/70 bg-background p-4">
-                                <p className="font-medium">Base case</p>
-                                <p className="mt-2 text-sm text-muted-foreground">The middle path follows the average recent return, which is useful for rough planning and comparison.</p>
+                                <p className="font-medium text-black">Base case</p>
+                                <p className="mt-2 text-sm text-foreground">The middle path follows the average recent return, which is useful for rough planning and comparison.</p>
                             </div>
                             <div className="rounded-xl border border-border/70 bg-background p-4">
-                                <p className="font-medium">Bear case</p>
+                                <p className="font-medium text-rose-400">Bear case</p>
                                 <p className="mt-2 text-sm text-muted-foreground">The bearish path shows where price could drift if the move loses momentum or volatility expands lower.</p>
                             </div>
                         </div>
