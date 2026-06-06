@@ -19,6 +19,8 @@ export const ROUTES = {
     PREDICTIONS: "/dashboard/predictions",
     PROFILE:     "/dashboard/profile",
     SETTINGS:    "/dashboard/settings",
+    SENTIMENT:   "/dashboard/sentiment",
+    NEWS:        "/dashboard/news",
 } as const;
 
 export type AppRoute = (typeof ROUTES)[keyof typeof ROUTES];
