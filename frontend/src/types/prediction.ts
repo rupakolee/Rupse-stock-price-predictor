@@ -15,6 +15,10 @@ export interface PredictionSession {
     changePct: number
 }
 
+export interface PredictionMetrics {
+    r2: number
+}
+
 export interface PredictionData {
     symbol: string
     currentPrice: number
@@ -38,4 +42,11 @@ export interface PredictionData {
     horizonDays: number
     points: PredictionPoint[]
     recentSessions: PredictionSession[]
+    trainDates: string[]
+    trainPrices: number[]
+    testDates: string[]
+    testPrices: number[]
+    predictedDates: string[]
+    predictedPrices: number[]
+    metrics: PredictionMetrics
 }

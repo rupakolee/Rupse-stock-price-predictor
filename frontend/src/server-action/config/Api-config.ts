@@ -10,18 +10,14 @@ import Swal from "sweetalert2";
 import { apiClient } from "@/API";
 import { PostErrorConfig } from "../error-config/ErrorConfig";
 
-/* =======================
-   Types
-======================= */
+//  Types
 type QueryParams = Record<string, any>;
 
 type WithId = {
   id: number;
 };
 
-/* =======================
-   API Factory
-======================= */
+//   API Factory
 export function createApiConfig<
   TEntity,
   TCreate = TEntity,
@@ -52,7 +48,7 @@ export function createApiConfig<
       queryKey: [entityName, stableKey],
       queryFn: async () => {
         const response = await apiClient.get(`/${entityName}`, { params: queryParams });
-        return response.data.data; 
+        return response.data.data;
       },
       ...options,
     });
@@ -95,9 +91,7 @@ export function createApiConfig<
     });
   };
 
-  /* =======================
-     GET BY SYMBOL (string key — e.g. stock ticker)
-  ======================== */
+  // GET BY SYMBOL (string key — e.g. stock ticker)
   const useGetBySymbol = (symbol: string, queryParams?: QueryParams) => {
     const stableKey = queryParams ? JSON.stringify(queryParams) : "symbol";
 
@@ -113,9 +107,7 @@ export function createApiConfig<
     });
   };
 
-  /* =======================
-     CREATE
-  ======================== */
+//     CREATE
   const useCreate = () => {
     const queryClient = useQueryClient();
 
