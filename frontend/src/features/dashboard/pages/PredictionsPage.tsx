@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useMemo, useRef, useState, type FormEvent } from 'react'
 import {
     Activity,
     ArrowDownRight,
@@ -8,21 +8,22 @@ import {
     Sparkles,
     Target,
 } from 'lucide-react'
+import { Line } from 'react-chartjs-2'
 import {
     Chart as ChartJS,
     CategoryScale,
     LinearScale,
     PointElement,
     LineElement,
-    LineController,
     Filler,
     Tooltip,
     Legend,
 } from 'chart.js'
+import zoomPlugin from 'chartjs-plugin-zoom'
 import { useGetPredictionByTicker } from '@/server-action/api/prediction.api'
 import { StockLoader } from '@/components/ui'
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, LineController, Filler, Tooltip, Legend)
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip, Legend, zoomPlugin)
 
 const HORIZON_OPTIONS = [
     { label: '5D', days: 5 },
@@ -41,129 +42,155 @@ const formatPercent = (value?: number | null) => {
     return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`
 }
 
-const formatChartLabel = (value: string) => {
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return value
-
-    return date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-    })
+const formatChartDate = (dateStr: string) => {
+    const date = new Date(dateStr)
+    if (Number.isNaN(date.getTime())) return dateStr
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
 const PredictionChart = ({ data }: { data: NonNullable<ReturnType<typeof useGetPredictionByTicker>['data']> }) => {
-    const canvasRef = useRef<HTMLCanvasElement | null>(null)
-    const chartRef = useRef<ChartJS | null>(null)
+    const chartRef = useRef<any>(null)
 
-    const chartPayload = useMemo(() => {
-        const actualSeries = [...(data.recentSessions ?? [])].reverse().map((session) => ({
-            label: formatChartLabel(session.datetime),
-            actual: session.close,
-            predicted: null as number | null,
-        }))
+    const chartData = useMemo(() => {
+        const shiftedPredicted = [null, ...data.predictedPrices.slice(0, -1)]
 
-        const forecastSeries = [
-            { label: 'Now', actual: data.currentPrice, predicted: data.currentPrice },
-            ...(data.points ?? []).map((point) => ({
-                label: point.day,
-                actual: null as number | null,
-                predicted: point.projected,
-            })),
+        const allLabels = [
+            ...data.trainDates.map(formatChartDate),
+            ...data.testDates.map(formatChartDate),
         ]
 
-        const labels = [...actualSeries.map((item) => item.label), ...forecastSeries.map((item) => item.label)]
-        const actual = [...actualSeries.map((item) => item.actual), ...forecastSeries.map((item) => item.actual)]
-        const predicted = [...actualSeries.map((item) => item.predicted), ...forecastSeries.map((item) => item.predicted)]
+        const allTrainPrices = [...data.trainPrices, ...Array(data.testPrices.length).fill(null)]
 
-        return { labels, actual, predicted }
+        const allTestPrices = [
+            ...Array(data.trainPrices.length).fill(null),
+            ...data.testPrices,
+        ]
+
+        const allPredictedPrices = [
+            ...Array(data.trainPrices.length).fill(null),
+            ...shiftedPredicted,
+        ]
+
+        const sliceStart = Math.max(0, allLabels.length - 30)
+
+        return {
+            labels: allLabels.slice(sliceStart),
+            datasets: [
+                {
+                    label: 'Train Close Price',
+                    data: allTrainPrices.slice(sliceStart),
+                    borderColor: '#10B981',
+                    borderWidth: 2,
+                    tension: 0.1,
+                    pointRadius: 0,
+                },
+                {
+                    label: 'Test Actual Close Price',
+                    data: allTestPrices.slice(sliceStart),
+                    borderColor: '#3B82F6',
+                    borderWidth: 2,
+                    tension: 0.1,
+                    pointRadius: 0,
+                },
+                {
+                    label: 'Predicted Close Price',
+                    data: allPredictedPrices.slice(sliceStart),
+                    borderColor: '#EF4444',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    tension: 0.1,
+                    pointRadius: 0,
+                },
+            ],
+        }
     }, [data])
 
-    useEffect(() => {
-        if (!canvasRef.current) return
+    const r2 = data.metrics?.r2
+    const confidence = r2 !== undefined ? Math.max(0, Math.min(r2 * 100, 100)) : null
 
-        const existing = ChartJS.getChart(canvasRef.current)
-        if (existing) existing.destroy()
+    const handleResetZoom = () => {
         if (chartRef.current) {
-            chartRef.current.destroy()
-            chartRef.current = null
+            chartRef.current.resetZoom()
         }
+    }
 
-        const ctx = canvasRef.current.getContext('2d')
-        if (!ctx) return
-
-        chartRef.current = new ChartJS(ctx, {
-            type: 'line',
-            data: {
-                labels: chartPayload.labels,
-                datasets: [
-                    {
-                        label: 'Actual price',
-                        data: chartPayload.actual,
-                        borderColor: '#38bdf8',
-                        backgroundColor: '#38bdf833',
-                        borderWidth: 2,
-                        tension: 0.3,
-                        pointRadius: 0,
-                        spanGaps: false,
-                    },
-                    {
-                        label: 'Predicted price',
-                        data: chartPayload.predicted,
-                        borderColor: '#f59e0b',
-                        backgroundColor: '#f59e0b33',
-                        borderDash: [6, 6],
-                        borderWidth: 2,
-                        tension: 0.3,
-                        pointRadius: 0,
-                        spanGaps: false,
-                    },
-                ],
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: { mode: 'index', intersect: false },
-                plugins: {
-                    legend: {
-                        display: true,
-                        labels: {
-                            color: '#9ca3af',
-                            usePointStyle: true,
-                            pointStyle: 'line',
-                            boxWidth: 18,
+    return (
+        <div className="relative h-full w-full">
+            <div className="absolute right-2 top-2 z-10">
+                <button
+                    onClick={handleResetZoom}
+                    className="rounded bg-gray-200 px-3 py-1 text-sm hover:bg-gray-300"
+                >
+                    Reset Zoom
+                </button>
+            </div>
+            {confidence !== null && (
+                <div className="absolute left-2 top-2 z-10 rounded bg-white/80 px-2 py-1 text-xs text-gray-600">
+                    Confidence: {confidence.toFixed(1)}%
+                </div>
+            )}
+            <Line
+                ref={chartRef}
+                data={chartData}
+                options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20,
+                            },
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: (ctx) => {
+                                    const val = ctx.raw
+                                    if (val === null) return ''
+                                    return `${ctx.dataset.label}: $${Number(val).toFixed(2)}`
+                                },
+                            },
+                        },
+                        zoom: {
+                            zoom: {
+                                wheel: { enabled: true },
+                                pinch: { enabled: true },
+                                mode: 'xy',
+                            },
+                            pan: {
+                                enabled: true,
+                                mode: 'xy',
+                            },
                         },
                     },
-                    tooltip: {
-                        callbacks: {
-                            label: (ctx) => `${ctx.dataset.label}: $${Number(ctx.raw).toFixed(2)}`,
+                    scales: {
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45,
+                                color: '#6B7280',
+                            },
+                            grid: { display: false },
+                        },
+                        y: {
+                            ticks: {
+                                color: '#6B7280',
+                                callback: (value) => `$${Number(value).toFixed(0)}`,
+                            },
+                            grid: { color: '#6B728020' },
                         },
                     },
-                },
-                scales: {
-                    x: {
-                        ticks: { color: '#6B7280', maxTicksLimit: 10 },
-                        grid: { display: false },
+                    interaction: {
+                        intersect: false,
+                        mode: 'nearest',
                     },
-                    y: {
-                        ticks: {
-                            color: '#6B7280',
-                            callback: (value) => `$${Number(value).toFixed(0)}`,
-                        },
-                        grid: { color: '#6B728020' },
-                    },
-                },
-            },
-        })
-
-        return () => {
-            if (chartRef.current) {
-                chartRef.current.destroy()
-                chartRef.current = null
-            }
-        }
-    }, [chartPayload])
-
-    return <canvas ref={canvasRef} className="h-full w-full" />
+                }}
+            />
+        </div>
+    )
 }
 
 const PredictionsPage = () => {
@@ -172,7 +199,7 @@ const PredictionsPage = () => {
     const [horizon, setHorizon] = useState(5)
 
     const { data, isLoading, error } = useGetPredictionByTicker(ticker, { horizon })
-
+console.log('data', data)
     const handleSearch = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault()
         const nextTicker = input.trim().toUpperCase()
@@ -273,21 +300,40 @@ const PredictionsPage = () => {
                         </div>
                     </div>
 
-                    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-                        <div className="flex items-center justify-between gap-3">
-                            <div>
-                                <h3 className="text-lg font-semibold text-black">Actual vs Predicted Price</h3>
-                                <p className="text-sm text-muted-foreground">
-                                    Historical closes in blue, forecast path in amber.
-                                </p>
+                        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+                            <div className="flex items-center justify-between gap-3">
+                                <div>
+                                    <h3 className="text-lg font-semibold text-black">Actual vs Predicted Price</h3>
+                                    <p className="text-sm text-muted-foreground">
+                                        Training data in green, test actual in blue, predictions in dashed red.
+                                    </p>
+                                </div>
+                                <Activity className="h-5 w-5 text-primary" />
                             </div>
-                            <Activity className="h-5 w-5 text-primary" />
-                        </div>
 
-                        <div className="mt-5 h-72">
-                            <PredictionChart data={data} />
+                            <div className="mt-5 h-72">
+                                <PredictionChart data={data} />
+                            </div>
+
+                            <div className="mt-4 flex justify-center gap-6 text-sm text-muted-foreground">
+                                <div className="flex items-center gap-2">
+                                    <div className="h-3 w-3 rounded-full bg-emerald-500" />
+                                    <span>Training Data</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="h-3 w-3 rounded-full bg-blue-500" />
+                                    <span>Test Actual</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="h-3 w-3 rounded-full bg-red-500" />
+                                    <div className="flex flex-col gap-px">
+                                        <div className="h-px w-3 bg-red-500" />
+                                        <div className="h-px w-3 bg-red-500" />
+                                    </div>
+                                    <span>Predicted</span>
+                                </div>
+                            </div>
                         </div>
-                    </div>
 
                     <div className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
                         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">

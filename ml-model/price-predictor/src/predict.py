@@ -17,14 +17,16 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+from sklearn.metrics import r2_score
 from sklearn.preprocessing import MinMaxScaler
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from config import LSTM_FEATURES, WINDOW_SIZE  # noqa: E402
+from config import LSTM_FEATURES, TRAIN_SPLIT, WINDOW_SIZE  # noqa: E402
 from src.data_loader import load_stock_data  # noqa: E402
+from src.dataset import create_sequences  # noqa: E402
 from src.features import create_features  # noqa: E402
 
 
@@ -101,21 +103,69 @@ def build_payload(symbol: str, horizon: int) -> dict:
     if len(features) < WINDOW_SIZE:
         raise RuntimeError(f"Not enough data to build a {WINDOW_SIZE}-day prediction window")
 
-    scaler = MinMaxScaler()
-    scaled = scaler.fit_transform(features[LSTM_FEATURES].values)
-    sample = scaled[-WINDOW_SIZE:]
+    # Raw data may have one more row than features (last row dropped by
+    # create_features because next_return needs tomorrow's close).  Save
+    # the most recent actual trading session for currentPrice / latestDate.
+    raw_last_row = raw.iloc[-1]
+    raw_last_close = float(raw_last_row["Close"])
+    raw_last_date = pd.Timestamp(raw_last_row["Date"])
+    raw_data = raw  # keep a reference for stats below
+
+    closes_all = features["Close"].astype(float).to_numpy()
+    dates_all = features["Date"].astype(str).to_numpy()
+
+    feat_scaler = MinMaxScaler()
+    X_scaled = feat_scaler.fit_transform(features[LSTM_FEATURES].values)
+    y_raw = features["next_return"].values
+
+    X_seq, y_seq = create_sequences(X_scaled, y_raw, window_size=WINDOW_SIZE)
+
+    split = int(len(X_seq) * TRAIN_SPLIT)
+    X_test, y_test = X_seq[split:], y_seq[split:]
+
+    test_returns = model.predict(X_test, verbose=0).flatten()
+
+    seq_starts_at = WINDOW_SIZE
+    train_start = seq_starts_at
+    train_end = seq_starts_at + split
+    train_actual_prices = closes_all[train_start:train_end]
+    train_actual_dates = dates_all[train_start:train_end]
+
+    n_test = len(y_test)
+    today_closes_test = closes_all[train_end : train_end + n_test]
+    next_start = train_end + 1
+
+    next_close_actual = closes_all[next_start : next_start + n_test]
+    test_actual_dates = dates_all[next_start : next_start + n_test]
+
+    n_actual = len(next_close_actual)
+    test_actual_prices = next_close_actual
+    test_predicted_prices = today_closes_test[:n_actual] * (1 + test_returns[:n_actual])
+
+    test_r2 = r2_score(test_actual_prices, test_predicted_prices) if n_actual > 1 else 0.0
+
+    sample = X_scaled[-WINDOW_SIZE:]
 
     predicted_return = float(model.predict(sample[None, ...], verbose=0).flatten()[0])
 
-    recent = features.tail(min(90, len(features))).copy()
-    closes = recent["Close"].astype(float).to_numpy()
+    # Extend chart arrays with the most recent trading session
+    # (was dropped from features by next_return's shift(-1) + dropna).
+    _raw_last_str = _format_date(raw_last_date)
+    _predicted_last_close = float(closes_all[-1] * (1 + predicted_return))
+    test_actual_dates_ext = list(test_actual_dates) + [_raw_last_str]
+    test_actual_prices_ext = list(test_actual_prices) + [raw_last_close]
+    predicted_dates_ext = list(test_actual_dates) + [_raw_last_str]
+    predicted_prices_ext = list(test_predicted_prices) + [_predicted_last_close]
+
+    recent_raw = raw_data.tail(min(90, len(raw_data))).copy()
+    closes = recent_raw["Close"].astype(float).to_numpy()
     returns = np.diff(closes) / closes[:-1] if len(closes) > 1 else np.array([])
 
-    current_price = float(closes[-1])
+    current_price = raw_last_close
     mean_return = _average(returns) if len(returns) else 0.0
     volatility = _std(returns)
-    moving_average_20 = float(recent["Close"].tail(20).mean())
-    moving_average_50 = float(recent["Close"].tail(50).mean())
+    moving_average_20 = float(recent_raw["Close"].tail(20).mean())
+    moving_average_50 = float(recent_raw["Close"].tail(50).mean())
     momentum = ((current_price - moving_average_20) / moving_average_20) * 100 if moving_average_20 else 0.0
     trend_score = momentum + (((moving_average_20 - moving_average_50) / moving_average_50) * 100 if moving_average_50 else 0.0)
     total_return = ((current_price - float(closes[0])) / float(closes[0])) * 100 if len(closes) > 1 else 0.0
@@ -124,8 +174,7 @@ def build_payload(symbol: str, horizon: int) -> dict:
     bullish_growth = 1 + predicted_return + volatility * 0.45
     bearish_growth = max(0.01, 1 + predicted_return - volatility * 0.45)
 
-    last_row = recent.iloc[-1]
-    last_date = pd.Timestamp(last_row["Date"])
+    last_date = raw_last_date
 
     points = []
     for step in range(1, horizon + 1):
@@ -150,7 +199,7 @@ def build_payload(symbol: str, horizon: int) -> dict:
     trend_tone = "text-emerald-400" if trend_score > 1 else "text-rose-400" if trend_score < -1 else "text-muted-foreground"
 
     recent_sessions = []
-    for _, row in recent.tail(5).iloc[::-1].iterrows():
+    for _, row in raw_data.tail(5).iloc[::-1].iterrows():
         open_price = _to_float(row["Open"])
         close_price = _to_float(row["Close"])
         change_pct = ((close_price - open_price) / open_price) * 100 if open_price else 0.0
@@ -187,10 +236,19 @@ def build_payload(symbol: str, horizon: int) -> dict:
         "movingAverage20": moving_average_20,
         "movingAverage50": moving_average_50,
         "latestDate": _format_date(last_date),
-        "recentCount": int(len(recent)),
+        "recentCount": int(len(recent_raw)),
         "horizonDays": horizon,
         "points": points,
         "recentSessions": recent_sessions,
+        "trainDates": train_actual_dates.tolist(),
+        "trainPrices": train_actual_prices.tolist(),
+        "testDates": test_actual_dates_ext,
+        "testPrices": test_actual_prices_ext,
+        "predictedDates": predicted_dates_ext,
+        "predictedPrices": predicted_prices_ext,
+        "metrics": {
+            "r2": test_r2,
+        },
     }
 
 
