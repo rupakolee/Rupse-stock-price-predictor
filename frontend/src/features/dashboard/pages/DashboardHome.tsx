@@ -100,7 +100,7 @@ const DashboardHome = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-card p-4 rounded-xl border border-border">
                     <p className="text-xs text-muted-foreground mb-1">{meta?.symbol ?? ticker} - Latest Close</p>
-                    <p className="text-xl font-bold text-white">{latestClose !== null ? `$${latestClose.toFixed(2)}` : '—'}</p>
+                    <p className={`text-xl font-bold ${dayChangePct !== null && dayChangePct >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>{latestClose !== null ? `$${latestClose.toFixed(2)}` : '—'}</p>
                     {dayChangePct !== null && (
                         <p className={`text-xs mt-1 ${dayChangePct >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                             {dayChangePct >= 0 ? '+' : ''}{dayChangePct.toFixed(2)}% today
@@ -109,12 +109,12 @@ const DashboardHome = () => {
                 </div>
                 <div className="bg-card p-4 rounded-xl border border-border">
                     <p className="text-xs text-muted-foreground mb-1">Exchange</p>
-                    <p className="text-xl font-bold text-white">{exchangeLabel}</p>
+                    <p className="text-xl font-bold text-black">{exchangeLabel}</p>
                     <p className="text-xs text-muted-foreground mt-1">{currencyLabel}</p>
                 </div>
                 <div className="bg-card p-4 rounded-xl border border-border">
                     <p className="text-xs text-muted-foreground mb-1">Data Points</p>
-                    <p className="text-xl font-bold text-white">{values.length}</p>
+                    <p className="text-xl font-bold text-black">{values.length}</p>
                     <p className="text-xs text-muted-foreground mt-1">Daily intervals</p>
                 </div>
             </div>

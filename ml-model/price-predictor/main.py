@@ -87,8 +87,15 @@ def main() -> None:
     preds_price  = today_closes_test * (1 + pred_returns)
     actual_price = today_closes_test * (1 + y_test)
 
-    # ── Evaluate ──────────────────────────────────────────────────────────────
-    preds_price = evaluate_model(preds_price, actual_price, label="LSTM")
+    # ── Train set predictions ──────────────────────────────────────────────────
+    train_returns = model.predict(X_train, verbose=0).flatten()
+    today_closes_train = closes[WINDOW_SIZE - 1: WINDOW_SIZE - 1 + len(X_train)]
+    train_preds  = today_closes_train * (1 + train_returns)
+    train_actual = today_closes_train * (1 + y_train)
+    evaluate_model(train_preds, train_actual, label="LSTM (Train)")
+
+    # ── Evaluate (Test) ────────────────────────────────────────────────────────
+    preds_price = evaluate_model(preds_price, actual_price, label="LSTM (Test)")
 
     # ── Backtest ──────────────────────────────────────────────────────────────
     df_test_start = WINDOW_SIZE - 1 + split

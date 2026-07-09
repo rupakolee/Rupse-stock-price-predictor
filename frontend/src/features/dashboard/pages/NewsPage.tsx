@@ -173,7 +173,7 @@ const NewsPage = () => {
                     {/* ── Summary strip ── */}
                     <div className="flex flex-wrap items-center gap-3">
                         <span className="text-sm text-muted-foreground">
-                            <span className="font-semibold text-foreground">{articles.length}</span> articles for{' '}
+                            <span className="font-semibold text-muted-foreground">{articles.length}</span> articles for{' '}
                             <span className="font-semibold text-primary">{data.symbol}</span>
                         </span>
                         <div className="flex flex-wrap gap-2 ml-auto">

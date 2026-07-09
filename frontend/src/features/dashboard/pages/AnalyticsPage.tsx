@@ -248,7 +248,7 @@ const AnalyticsPage = () => {
                         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
                             <div className="flex items-center justify-between gap-3">
                                 <div>
-                                    <h3 className="text-lg font-semibold">Signal Summary</h3>
+                                    <h3 className="text-lg font-semibold text-muted-foreground">Signal Summary</h3>
                                     <p className="text-sm text-muted-foreground">A compact read on trend quality and risk profile.</p>
                                 </div>
                                 <Activity className="h-5 w-5 text-primary" />
@@ -258,7 +258,7 @@ const AnalyticsPage = () => {
                                 <div className="rounded-xl border border-border/70 bg-background p-4">
                                     <div className="flex items-center gap-2 text-sm font-medium">
                                         <TrendingUp className="h-4 w-4 text-emerald-500" />
-                                        Bullish Sessions
+                                        <span className="text-emerald-500" >Bullish Sessions</span>
                                     </div>
                                     <p className="mt-3 text-2xl font-bold text-emerald-500">{analytics.bullishDays !== null ? `${analytics.bullishDays.toFixed(1)}%` : '—'}</p>
                                     <p className="mt-2 text-xs text-muted-foreground">Share of sessions that closed higher than the previous day.</p>
@@ -267,7 +267,7 @@ const AnalyticsPage = () => {
                                 <div className="rounded-xl border border-border/70 bg-background p-4">
                                     <div className="flex items-center gap-2 text-sm font-medium">
                                         <TrendingDown className="h-4 w-4 text-rose-500" />
-                                        Max Drawdown
+                                        <span className="text-rose-500">Max Drawdown</span>
                                     </div>
                                     <p className="mt-3 text-2xl font-bold text-red-500">{formatPercent(analytics.maxDrawdown)}</p>
                                     <p className="mt-2 text-xs text-muted-foreground">Largest peak-to-trough decline in the selected window.</p>
@@ -276,7 +276,7 @@ const AnalyticsPage = () => {
                                 <div className="rounded-xl border border-border/70 bg-background p-4">
                                     <div className="flex items-center gap-2 text-sm font-medium">
                                         <Gauge className="h-4 w-4 text-primary" />
-                                        Average Daily Range
+                                        <span className="text-black">Average Daily Range</span>
                                     </div>
                                     <p className="mt-3 text-2xl font-bold text-black">{analytics.averageRangePct !== null ? `${analytics.averageRangePct.toFixed(2)}%` : '—'}</p>
                                     <p className="mt-2 text-xs text-muted-foreground">Typical intraday spread from low to high.</p>
@@ -285,7 +285,7 @@ const AnalyticsPage = () => {
                                 <div className="rounded-xl border border-border/70 bg-background p-4">
                                     <div className="flex items-center gap-2 text-sm font-medium">
                                         <BarChart3 className="h-4 w-4 text-primary" />
-                                        Session Count
+                                        <span className="text-black">Session Count</span>
                                     </div>
                                     <p className="mt-3 text-2xl font-bold text-black">{analytics.sessionCount}</p>
                                     <p className="mt-2 text-xs text-muted-foreground">Trading days included in this analysis window.</p>
@@ -312,7 +312,7 @@ const AnalyticsPage = () => {
                         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
                             <div className="flex items-center gap-2">
                                 <CalendarRange className="h-5 w-5 text-primary" />
-                                <h3 className="text-lg font-semibold">Recent Sessions</h3>
+                                <h3 className="text-lg font-semibold text-muted-foreground">Recent Sessions</h3>
                             </div>
 
                             <div className="mt-4 space-y-3">
@@ -326,7 +326,7 @@ const AnalyticsPage = () => {
                                         <div key={`${session.datetime}-${index}`} className="rounded-xl border border-border/70 bg-background p-4">
                                             <div className="flex items-start justify-between gap-3">
                                                 <div>
-                                                    <p className="text-sm font-medium">
+                                                    <p className="text-sm font-medium text-muted-foreground">
                                                         {new Date(session.datetime).toLocaleDateString('en-US', {
                                                             month: 'short',
                                                             day: 'numeric',
@@ -369,22 +369,22 @@ const AnalyticsPage = () => {
                                 <Activity className="h-4 w-4" />
                             </div>
                             <div>
-                                <h3 className="text-lg font-semibold">What this page should tell you</h3>
+                                <h3 className="text-lg font-semibold text-black">What this page should tell you</h3>
                                 <p className="text-sm text-muted-foreground">This is the decision layer above the raw price chart.</p>
                             </div>
                         </div>
 
                         <div className="mt-4 grid gap-4 md:grid-cols-3">
                             <div className="rounded-xl border border-border/70 bg-background p-4">
-                                <p className="font-medium">Trend quality</p>
+                                <p className="font-medium text-muted-foreground">Trend quality</p>
                                 <p className="mt-2 text-sm text-muted-foreground">Use period return and bullish-session share to see whether the ticker has been drifting upward or sideways.</p>
                             </div>
                             <div className="rounded-xl border border-border/70 bg-background p-4">
-                                <p className="font-medium">Risk behavior</p>
+                                <p className="font-medium text-muted-foreground">Risk behavior</p>
                                 <p className="mt-2 text-sm text-muted-foreground">Volatility, drawdown, and daily range tell you how violent the moves are before you size a trade.</p>
                             </div>
                             <div className="rounded-xl border border-border/70 bg-background p-4">
-                                <p className="font-medium">Recent momentum</p>
+                                <p className="font-medium text-muted-foreground">Recent momentum</p>
                                 <p className="mt-2 text-sm text-muted-foreground">The last few sessions reveal whether the latest move is accelerating or fading.</p>
                             </div>
                         </div>
