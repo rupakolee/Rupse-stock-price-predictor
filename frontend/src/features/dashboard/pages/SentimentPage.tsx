@@ -104,7 +104,7 @@ const DistBar = ({ data }: { data: SentimentData }) => {
     const total = data.total || 1
     const posW = (data.positive / total) * 100
     const negW = (data.negative / total) * 100
-    const neuW = (data.neutral  / total) * 100
+    const neuW = (data.neutral / total) * 100
 
     return (
         <div className="space-y-2">
@@ -118,16 +118,19 @@ const DistBar = ({ data }: { data: SentimentData }) => {
             </div>
             <div className="flex flex-wrap gap-4 text-xs">
                 <span className="flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block" />
-                    Positive {data.positive}
+                    <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block " />
+                    <span className='text-muted-foreground'>
+                        Positive <span className="text-emerald-500">{data.positive}</span>
+                    </span>
                 </span>
                 <span className="flex items-center gap-1.5">
                     <span className="h-2 w-2 rounded-full bg-amber-400 inline-block" />
-                    Neutral {data.neutral}
+                    <span className="text-muted-foreground">Neutral <span className="text-amber-500">{data.neutral}</span></span>
                 </span>
                 <span className="flex items-center gap-1.5">
                     <span className="h-2 w-2 rounded-full bg-rose-500 inline-block" />
-                    Negative {data.negative}
+                    <span className="text-muted-foreground">Negative</span> 
+                    <span className="text-rose-500">{data.negative}</span>
                 </span>
             </div>
         </div>
@@ -138,7 +141,7 @@ const DistBar = ({ data }: { data: SentimentData }) => {
 
 const SentimentPage = () => {
     const [ticker, setTicker] = useState('AAPL')
-    const [input, setInput]   = useState('AAPL')
+    const [input, setInput] = useState('AAPL')
 
     const { data, isLoading, error } = useGetSentimentByTicker(ticker)
 
@@ -242,18 +245,18 @@ const SentimentPage = () => {
                         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm flex flex-col items-center justify-center gap-4">
                             <div className="flex items-center gap-2 self-start">
                                 <BarChart3 size={18} className="text-primary" />
-                                <h3 className="text-lg font-semibold">Sentiment Gauge</h3>
+                                <h3 className="text-lg font-semibold text-black">Sentiment Gauge</h3>
                             </div>
                             <SentimentGauge score={data.overallScore} />
                             <p className="text-xs text-muted-foreground text-center">
-                                Red = negative · Amber = neutral · Green = positive
+                                <span className="text-rose-500">Red</span> = negative · <span className="text-amber-500">Amber</span> = neutral · <span className="text-emerald-500">Green</span> = positive
                             </p>
                         </div>
 
                         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm flex flex-col justify-center gap-6">
                             <div className="flex items-center gap-2">
                                 <Newspaper size={18} className="text-primary" />
-                                <h3 className="text-lg font-semibold">Coverage Distribution</h3>
+                                <h3 className="text-lg font-semibold text-black">Coverage Distribution</h3>
                             </div>
                             <DistBar data={data} />
                         </div>
@@ -262,7 +265,7 @@ const SentimentPage = () => {
                     {/* ── Breakdown list ── */}
                     {data.breakdown.length > 0 && (
                         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-                            <h3 className="mb-4 text-lg font-semibold">Top Recent Headlines</h3>
+                            <h3 className="mb-4 text-lg font-semibold text-muted-foreground">Top Recent Headlines</h3>
                             <div className="space-y-3">
                                 {data.breakdown.map((item, idx) => (
                                     <BreakdownRow key={idx} item={item} />

@@ -59,16 +59,14 @@ const PredictionChart = ({ data }: { data: NonNullable<ReturnType<typeof useGetP
             ...data.testDates.map(formatChartDate),
         ]
 
-        const allTrainPrices = [...data.trainPrices, ...Array(data.testPrices.length).fill(null)]
-
-        const allTestPrices = [
-            ...Array(data.trainPrices.length).fill(null),
+        const allActualPrices = [
+            ...data.trainPrices,
             ...data.testPrices,
         ]
 
         const allPredictedPrices = [
             ...Array(data.trainPrices.length).fill(null),
-            ...shiftedPredicted,
+            ...shiftedPredicted.slice(0, data.testPrices.length + 1),
         ]
 
         const sliceStart = Math.max(0, allLabels.length - 30)
@@ -77,16 +75,8 @@ const PredictionChart = ({ data }: { data: NonNullable<ReturnType<typeof useGetP
             labels: allLabels.slice(sliceStart),
             datasets: [
                 {
-                    label: 'Train Close Price',
-                    data: allTrainPrices.slice(sliceStart),
-                    borderColor: '#10B981',
-                    borderWidth: 2,
-                    tension: 0.1,
-                    pointRadius: 0,
-                },
-                {
-                    label: 'Test Actual Close Price',
-                    data: allTestPrices.slice(sliceStart),
+                    label: 'Actual Close Price',
+                    data: allActualPrices.slice(sliceStart),
                     borderColor: '#3B82F6',
                     borderWidth: 2,
                     tension: 0.1,
@@ -305,7 +295,7 @@ console.log('data', data)
                                 <div>
                                     <h3 className="text-lg font-semibold text-black">Actual vs Predicted Price</h3>
                                     <p className="text-sm text-muted-foreground">
-                                        Training data in green, test actual in blue, predictions in dashed red.
+                                        Actual close price in blue, predicted price in dashed red.
                                     </p>
                                 </div>
                                 <Activity className="h-5 w-5 text-primary" />
@@ -317,12 +307,8 @@ console.log('data', data)
 
                             <div className="mt-4 flex justify-center gap-6 text-sm text-muted-foreground">
                                 <div className="flex items-center gap-2">
-                                    <div className="h-3 w-3 rounded-full bg-emerald-500" />
-                                    <span>Training Data</span>
-                                </div>
-                                <div className="flex items-center gap-2">
                                     <div className="h-3 w-3 rounded-full bg-blue-500" />
-                                    <span>Test Actual</span>
+                                    <span>Actual Close Price</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <div className="h-3 w-3 rounded-full bg-red-500" />
@@ -330,7 +316,7 @@ console.log('data', data)
                                         <div className="h-px w-3 bg-red-500" />
                                         <div className="h-px w-3 bg-red-500" />
                                     </div>
-                                    <span>Predicted</span>
+                                    <span>Predicted Close Price</span>
                                 </div>
                             </div>
                         </div>

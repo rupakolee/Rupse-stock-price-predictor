@@ -39,13 +39,7 @@ const Chart = ({ data, ticker }) => {
         shiftedPredictedDates[shiftedPredictedDates.length - 1],
     ];
 
-    const allTrainPrices = [...data.train_prices, ...Array(data.test_prices.length + 1).fill(null)];
-
-    const allTestPrices = [
-        ...Array(data.train_prices.length).fill(null),
-        ...data.test_prices,
-        null,
-    ];
+    const allActualPrices = [...data.train_prices, ...data.test_prices, null];
 
     const allPredictedPrices = [
         ...Array(data.train_prices.length).fill(null),
@@ -58,16 +52,8 @@ const Chart = ({ data, ticker }) => {
         labels: allLabels.slice(sliceStart),
         datasets: [
             {
-                label: "Train Close Price",
-                data: allTrainPrices.slice(sliceStart),
-                borderColor: "#10B981",
-                borderWidth: 2,
-                tension: 0.1,
-                pointRadius: 0,
-            },
-            {
-                label: "Test Actual Close Price",
-                data: allTestPrices.slice(sliceStart),
+                label: "Actual Close Price",
+                data: allActualPrices.slice(sliceStart),
                 borderColor: "#3B82F6",
                 borderWidth: 2,
                 tension: 0.1,
@@ -181,18 +167,14 @@ const Chart = ({ data, ticker }) => {
 
             <div className="mt-4 text-sm text-gray-500 flex justify-center gap-4">
                 <div className="flex items-center">
-                    <div className="w-3 h-3 bg-emerald-500 rounded-full mr-2"></div>
-                    <span>Training Data</span>
-                </div>
-                <div className="flex items-center">
                     <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-                    <span>Test Actual</span>
+                    <span>Actual Close Price</span>
                 </div>
                 <div className="flex items-center">
                     <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
                     <div className="w-3 h-px bg-red-500 mx-1"></div>
                     <div className="w-3 h-px bg-red-500 mx-1"></div>
-                    <span className="ml-2">Predicted</span>
+                    <span className="ml-2">Predicted Close Price</span>
                 </div>
             </div>
         </div>
