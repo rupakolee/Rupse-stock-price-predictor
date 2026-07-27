@@ -1,5 +1,9 @@
 TICKER = "AAPL"
-START_DATE = "2018-01-01"
+
+# Number of recent trading days to fetch on the very first run.
+# Must be large enough for the model: at least WINDOW_SIZE + 50 (for MA50)
+# plus a small buffer for lag features.  150 is a safe default.
+INITIAL_LOOKBACK_DAYS = 150
 
 TRAIN_SPLIT = 0.8
 WINDOW_SIZE = 90

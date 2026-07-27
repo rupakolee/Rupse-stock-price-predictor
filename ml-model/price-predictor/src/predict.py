@@ -30,39 +30,6 @@ from src.dataset import create_sequences  # noqa: E402
 from src.features import create_features  # noqa: E402
 
 
-def _print_evaluation(
-    actual: np.ndarray,
-    predicted: np.ndarray,
-    label: str = "Test",
-) -> None:
-    mae = np.mean(np.abs(predicted - actual))
-    rmse = np.sqrt(np.mean((predicted - actual) ** 2))
-    mask = actual != 0
-    mape = np.mean(np.abs((predicted[mask] - actual[mask]) / actual[mask])) * 100
-    r2 = r2_score(actual, predicted)
-    actual_dir = np.sign(np.diff(actual, prepend=actual[0]))
-    pred_dir = np.sign(predicted - np.roll(actual, 1))
-    pred_dir[0] = 0
-    dir_acc = np.mean(actual_dir[1:] == pred_dir[1:]) * 100
-
-    msg = (
-        f"\n{'='*52}\n"
-        f"  {label} Set Evaluation\n"
-        f"{'='*52}\n"
-        f"  R² score                     : {r2:.4f}\n"
-        f"  Price MAE  (mean absolute error): ${mae:.2f}\n"
-        f"  Price RMSE (root mean sq error) : ${rmse:.2f}\n"
-        f"  Price MAPE (mean abs % error)   : {mape:.2f}%\n"
-        f"  Direction accuracy              : {dir_acc:.2f}%\n"
-    )
-    n_show = min(5, len(actual))
-    if n_show > 0:
-        msg += f"\n  Last {n_show} predictions vs actuals:\n"
-        msg += f"  {'Predicted':>12}  {'Actual':>10}  {'Error':>10}\n"
-        for p, a in zip(predicted[-n_show:], actual[-n_show:]):
-            msg += f"  ${p:>11.2f}  ${a:>9.2f}  ${p - a:>+9.2f}\n"
-    print(msg, file=sys.stderr)
-
 
 @dataclass
 class SessionRow:
@@ -164,17 +131,6 @@ def build_payload(symbol: str, horizon: int) -> dict:
     train_actual_prices = closes_all[train_start:train_end]
     train_actual_dates = dates_all[train_start:train_end]
 
-    # ── Predict on training set ────────────────────────────────────────────
-    train_returns = model.predict(X_train, verbose=0).flatten()
-
-    n_train = len(y_train)
-    today_closes_train = closes_all[train_start:train_start + n_train]
-    next_start_train = train_start + 1
-    train_actual_prices_full = closes_all[next_start_train:next_start_train + n_train]
-    train_predicted_prices_full = today_closes_train * (1 + train_returns)
-
-    _print_evaluation(train_actual_prices_full, train_predicted_prices_full, label="Train")
-
     test_returns = model.predict(X_test, verbose=0).flatten()
 
     n_test = len(y_test)
@@ -188,8 +144,6 @@ def build_payload(symbol: str, horizon: int) -> dict:
     test_actual_prices = next_close_actual
     test_predicted_prices = today_closes_test[:n_actual] * (1 + test_returns[:n_actual])
 
-    _print_evaluation(test_actual_prices, test_predicted_prices, label="Test")
-
     test_r2 = r2_score(test_actual_prices, test_predicted_prices) if n_actual > 1 else 0.0
 
     sample = X_scaled[-WINDOW_SIZE:]
@@ -197,17 +151,6 @@ def build_payload(symbol: str, horizon: int) -> dict:
     predicted_return = float(model.predict(sample[None, ...], verbose=0).flatten()[0])
 
     predicted_next_close = float(closes_all[-1] * (1 + predicted_return))
-    print(
-        f"\n{'='*52}\n"
-        f"  Next-Day Prediction\n"
-        f"{'='*52}\n"
-        f"  Symbol          : {symbol}\n"
-        f"  Last close      : ${closes_all[-1]:.2f}\n"
-        f"  Predicted close : ${predicted_next_close:.2f}\n"
-        f"  Expected return : {predicted_return:+.4%}\n"
-        f"  Expected move   : {((predicted_next_close / closes_all[-1]) - 1) * 100:+.2f}%\n",
-        file=sys.stderr,
-    )
 
     # Extend chart arrays with the most recent trading session
     # (was dropped from features by next_return's shift(-1) + dropna).
