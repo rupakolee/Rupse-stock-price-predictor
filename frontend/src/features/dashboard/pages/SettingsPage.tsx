@@ -43,7 +43,7 @@ const SettingsPage = () => {
                     <p className="text-sm text-muted-foreground">Adjust your dashboard preferences and account defaults.</p>
                 </div>
 
-                <Button variant="outline" className="gap-2 self-start sm:self-auto">
+                <Button variant="outline" className="gap-2 self-start sm:self-auto text-black">
                     <SlidersHorizontal className="h-4 w-4" />
                     Save Preferences
                 </Button>

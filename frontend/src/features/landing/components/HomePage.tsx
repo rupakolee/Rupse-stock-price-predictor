@@ -62,12 +62,12 @@ const HomePage: React.FC = () => {
 
                             <div className="mt-6 grid grid-cols-2 gap-4">
                                 <div className="bg-card/80 backdrop-blur-sm border border-slate-700 rounded-lg p-4 shadow-md">
-                                    <div className="text-xs text-slate-300">AAPL · Prediction</div>
+                                    <div className="text-xs text-black-300">AAPL · Prediction</div>
                                     <div className="mt-2 text-lg font-bold text-white">+3.2%</div>
                                     <div className="mt-1 text-sm text-slate-400">Confidence 78%</div>
                                 </div>
                                 <div className="bg-card/80 backdrop-blur-sm border border-slate-700 rounded-lg p-4 shadow-md">
-                                    <div className="text-xs text-slate-300">SPOT · Signals</div>
+                                    <div className="text-xs text-black-300">SPOT · Signals</div>
                                     <div className="mt-2 text-lg font-bold text-white">Bullish</div>
                                     <div className="mt-1 text-sm text-slate-400">Mentions +42% this week</div>
                                 </div>
