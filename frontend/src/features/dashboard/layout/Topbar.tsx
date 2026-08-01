@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { User, LogOut, Key, Settings, ChevronDown } from 'lucide-react'
+import { User, LogOut, Key, ChevronDown } from 'lucide-react'
 import { showConfirm } from '@/lib/sweet-alert/SweetAlert'
 import { ROUTES } from '@/routes/routes'
-import Swal from 'sweetalert2'
 import { useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
+import useChangePasswordModal from './ChangePasswordModal'
 
 const getUserName = (name?: string) => {
     const trimmed = name?.trim()
@@ -49,6 +49,7 @@ const Topbar = () => {
     const navigate = useNavigate()
     const [isOpen, setIsOpen] = useState(false)
     const dropdownRef = useRef<HTMLDivElement>(null)
+    const showChangePassword = useChangePasswordModal()
 
     const userName = getUserName(user?.name)
     const userInitials = getUserInitials(user?.name)
@@ -77,61 +78,6 @@ const Topbar = () => {
             localStorage.clear()
             window.location.href = ROUTES.LOGIN
         }
-    }
-
-    const handleChangePassword = () => {
-        setIsOpen(false)
-        Swal.fire({
-            title: 'Change Password',
-            html: `
-                <div class="flex flex-col gap-4 text-left p-2">
-                    <div class="flex flex-col gap-1">
-                        <label class="text-xs font-semibold text-muted-foreground uppercase">Current Password</label>
-                        <input type="password" id="old-password" class="swal2-input !m-0 !w-full" placeholder="••••••••">
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <label class="text-xs font-semibold text-muted-foreground uppercase">New Password</label>
-                        <input type="password" id="new-password" class="swal2-input !m-0 !w-full" placeholder="••••••••">
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <label class="text-xs font-semibold text-muted-foreground uppercase">Confirm Password</label>
-                        <input type="password" id="confirm-password" class="swal2-input !m-0 !w-full" placeholder="••••••••">
-                    </div>
-                </div>
-            `,
-            showCancelButton: true,
-            confirmButtonText: 'Update Password',
-            confirmButtonColor: 'oklch(0.72 0.19 142)',
-            background: 'oklch(0.18 0.02 264)',
-            color: 'oklch(0.97 0 0)',
-            focusConfirm: false,
-            preConfirm: () => {
-                const oldPass = (document.getElementById('old-password') as HTMLInputElement).value
-                const newPass = (document.getElementById('new-password') as HTMLInputElement).value
-                const confirmPass = (document.getElementById('confirm-password') as HTMLInputElement).value
-
-                if (!oldPass || !newPass || !confirmPass) {
-                    Swal.showValidationMessage('Please fill in all fields')
-                    return false
-                }
-                if (newPass !== confirmPass) {
-                    Swal.showValidationMessage('Passwords do not match')
-                    return false
-                }
-                return { oldPass, newPass }
-            }
-        }).then((result) => {
-            if (result.isConfirmed) {
-                Swal.fire({
-                    title: 'Success!',
-                    text: 'Your password has been updated.',
-                    icon: 'success',
-                    background: 'oklch(0.18 0.02 264)',
-                    color: 'oklch(0.97 0 0)',
-                    confirmButtonColor: 'oklch(0.72 0.19 142)',
-                })
-            }
-        })
     }
 
     return (
@@ -169,19 +115,19 @@ const Topbar = () => {
                                     Profile Details
                                 </button>
                                 <button
-                                    onClick={handleChangePassword}
+                                    onClick={() => { setIsOpen(false); showChangePassword(); }}
                                     className="flex items-center gap-3 w-full px-3 py-2.5 text-sm hover:bg-accent rounded-md transition-colors"
                                 >
                                     <Key className="h-4 w-4 text-muted-foreground" />
                                     Change Password
                                 </button>
-                                <button
+                                {/* <button
                                     onClick={() => { setIsOpen(false); navigate(ROUTES.SETTINGS); }}
                                     className="flex items-center gap-3 w-full px-3 py-2.5 text-sm hover:bg-accent rounded-md transition-colors"
                                 >
                                     <Settings className="h-4 w-4 text-muted-foreground" />
                                     Settings
-                                </button>
+                                </button> */}
                             </div>
                             <div className="p-1 border-t border-border">
                                 <button

@@ -25,12 +25,7 @@ import { StockLoader } from '@/components/ui'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip, Legend, zoomPlugin)
 
-const HORIZON_OPTIONS = [
-    { label: '5D', days: 5 },
-    { label: '10D', days: 10 },
-    { label: '1M', days: 21 },
-    { label: '3M', days: 63 },
-]
+const HORIZON_OPTIONS = [{ label: '5D', days: 5 }]
 
 const formatCurrency = (value?: number | null) => {
     if (value === null || value === undefined || Number.isNaN(value)) return '—'
