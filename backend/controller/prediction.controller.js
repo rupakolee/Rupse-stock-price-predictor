@@ -70,6 +70,11 @@ const buildForecastSeries = async (symbol) => {
   };
 };
 
+const buildBacktestSeries = (payload) => ({
+  backtestDates: payload?.predictedDates ?? [],
+  backtestPrices: payload?.predictedPrices ?? [],
+});
+
 const parsePredictionOutput = (stdout) => {
   const raw = stdout?.trim();
   if (!raw) {
@@ -111,7 +116,13 @@ export const fetchPrediction = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Forecast served from saved predictions",
-      data: { ...saved.payload, ...series, savedAt: saved.updatedAt, fromCache: true },
+      data: {
+        ...saved.payload,
+        ...series,
+        ...buildBacktestSeries(saved.payload),
+        savedAt: saved.updatedAt,
+        fromCache: true,
+      },
       timestamp: new Date().toISOString(),
     });
   }
@@ -146,7 +157,7 @@ export const fetchPrediction = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Forecast generated successfully",
-      data: { ...data, ...series, savedAt: now, fromCache: false },
+      data: { ...data, ...series, ...buildBacktestSeries(data), savedAt: now, fromCache: false },
       timestamp: now.toISOString(),
     });
   } catch (error) {
@@ -157,7 +168,13 @@ export const fetchPrediction = async (req, res) => {
       return res.status(200).json({
         success: true,
         message: "Forecast recompute failed — returning last saved prediction",
-        data: { ...saved.payload, ...series, savedAt: saved.updatedAt, fromCache: true },
+        data: {
+          ...saved.payload,
+          ...series,
+          ...buildBacktestSeries(saved.payload),
+          savedAt: saved.updatedAt,
+          fromCache: true,
+        },
         timestamp: new Date().toISOString(),
       });
     }

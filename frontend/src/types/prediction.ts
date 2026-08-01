@@ -1,5 +1,6 @@
 export interface PredictionPoint {
     day: string
+    date?: string
     projected: number
     bullish: number
     bearish: number
@@ -48,6 +49,8 @@ export interface PredictionData {
     testPrices: number[]
     predictedDates: string[]
     predictedPrices: number[]
+    backtestDates?: string[]
+    backtestPrices?: number[]
     metrics: PredictionMetrics
     savedAt?: string
     fromCache?: boolean

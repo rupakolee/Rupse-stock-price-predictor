@@ -8,6 +8,10 @@ INITIAL_LOOKBACK_DAYS = 150
 TRAIN_SPLIT = 0.8
 WINDOW_SIZE = 90
 
+# Number of most recent trading days used as the backtest window on the chart.
+# The LSTM is run over these last N days to compare predicted vs actual close.
+BACKTEST_WINDOW = 3
+
 LSTM_FEATURES = [
     # Trend / price level
     "close_scaled",
