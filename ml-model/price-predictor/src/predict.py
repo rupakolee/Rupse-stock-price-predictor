@@ -185,6 +185,7 @@ def build_payload(symbol: str, horizon: int) -> dict:
         next_day = _next_business_day(last_date, step)
         points.append(
             {
+                "date": next_day.date().isoformat(),
                 "day": next_day.strftime("%b %d"),
                 "projected": float(current_price * math.pow(base_growth, step)),
                 "bullish": float(current_price * math.pow(bullish_growth, step)),

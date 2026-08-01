@@ -2,6 +2,8 @@ import { execFile } from "child_process";
 import { promisify } from "util";
 import path from "path";
 import { fileURLToPath } from "url";
+import Prediction from "../model/prediction.model.js";
+import Forecast from "../model/forecast.model.js";
 
 const execFileAsync = promisify(execFile);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -20,6 +22,52 @@ const clampHorizon = (value) => {
   const parsed = Number.parseInt(value, 10);
   if (Number.isNaN(parsed)) return 5;
   return Math.min(Math.max(parsed, 1), 30);
+};
+
+const todayKey = (date = new Date()) => date.toISOString().split("T")[0];
+
+const isPredictionFresh = (saved) => {
+  if (!saved?.updatedAt) return false;
+  return todayKey(new Date(saved.updatedAt)) === todayKey();
+};
+
+const saveForecasts = async (symbol, points, predictedAt = new Date()) => {
+  const operations = (points || [])
+    .filter((point) => point?.date && Number.isFinite(point.projected))
+    .map((point) => ({
+      updateOne: {
+        filter: { symbol, targetDate: point.date },
+        update: {
+          $set: {
+            symbol,
+            targetDate: point.date,
+            predictedPrice: point.projected,
+            bullish: point.bullish,
+            bearish: point.bearish,
+            predictedAt,
+          },
+        },
+        upsert: true,
+      },
+    }));
+
+  if (operations.length) {
+    await Forecast.bulkWrite(operations);
+  }
+};
+
+const buildForecastSeries = async (symbol) => {
+  const forecasts = await Forecast.find({ symbol }).sort({ targetDate: 1 }).lean();
+
+  const performed = forecasts.filter(
+    (forecast) =>
+      forecast.predictedAt && todayKey(new Date(forecast.predictedAt)) <= forecast.targetDate,
+  );
+
+  return {
+    predictedDates: performed.map((forecast) => forecast.targetDate),
+    predictedPrices: performed.map((forecast) => forecast.predictedPrice),
+  };
 };
 
 const parsePredictionOutput = (stdout) => {
@@ -47,11 +95,24 @@ const parsePredictionOutput = (stdout) => {
 export const fetchPrediction = async (req, res) => {
   const symbol = req.params?.symbol?.trim()?.toUpperCase();
   const horizon = clampHorizon(req.query?.horizon);
+  const forceRefresh = req.query?.refresh === "1" || req.query?.refresh === "true";
 
   if (!symbol) {
     return res.status(400).json({
       success: false,
       message: "Symbol is required",
+    });
+  }
+
+  const saved = await Prediction.findOne({ symbol, horizon });
+
+  if (!forceRefresh && isPredictionFresh(saved)) {
+    const series = await buildForecastSeries(symbol);
+    return res.status(200).json({
+      success: true,
+      message: "Forecast served from saved predictions",
+      data: { ...saved.payload, ...series, savedAt: saved.updatedAt, fromCache: true },
+      timestamp: new Date().toISOString(),
     });
   }
 
@@ -71,14 +132,35 @@ export const fetchPrediction = async (req, res) => {
 
     const data = parsePredictionOutput(stdout);
 
+    const now = new Date();
+    await saveForecasts(symbol, data.points, now);
+
+    await Prediction.findOneAndUpdate(
+      { symbol, horizon },
+      { payload: data, updatedAt: now },
+      { upsert: true, returnDocument: "after" },
+    );
+
+    const series = await buildForecastSeries(symbol);
+
     return res.status(200).json({
       success: true,
       message: "Forecast generated successfully",
-      data,
-      timestamp: new Date().toISOString(),
+      data: { ...data, ...series, savedAt: now, fromCache: false },
+      timestamp: now.toISOString(),
     });
   } catch (error) {
     console.error("Prediction fetch error:", error);
+
+    if (saved) {
+      const series = await buildForecastSeries(symbol);
+      return res.status(200).json({
+        success: true,
+        message: "Forecast recompute failed — returning last saved prediction",
+        data: { ...saved.payload, ...series, savedAt: saved.updatedAt, fromCache: true },
+        timestamp: new Date().toISOString(),
+      });
+    }
 
     const message = error?.stderr?.toString?.().trim?.() || error?.message || "Failed to generate prediction";
 

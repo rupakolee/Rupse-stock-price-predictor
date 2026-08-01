@@ -49,4 +49,6 @@ export interface PredictionData {
     predictedDates: string[]
     predictedPrices: number[]
     metrics: PredictionMetrics
+    savedAt?: string
+    fromCache?: boolean
 }

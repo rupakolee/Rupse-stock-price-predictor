@@ -1,9 +1,13 @@
 import { useMemo, useRef, useState, type FormEvent } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { apiClient } from '@/API'
+import { API_ENDPOINTS } from '@/constant/constant'
 import {
     Activity,
     ArrowDownRight,
     ArrowUpRight,
     Brain,
+    RefreshCw,
     Search,
     Sparkles,
     Target,
@@ -44,14 +48,17 @@ const formatChartDate = (dateStr: string) => {
 }
 
 const PredictionChart = ({ data }: { data: NonNullable<ReturnType<typeof useGetPredictionByTicker>['data']> }) => {
-    const chartRef = useRef<any>(null)
+    const chartRef = useRef<ChartJS<'line'> | null>(null)
 
     const chartData = useMemo(() => {
-        const shiftedPredicted = [null, ...data.predictedPrices.slice(0, -1)]
+        const forecastByDate = new Map<string, number | null>()
+        data.predictedDates.forEach((date, index) => {
+            forecastByDate.set(date, data.predictedPrices[index] ?? null)
+        })
 
-        const allLabels = [
-            ...data.trainDates.map(formatChartDate),
-            ...data.testDates.map(formatChartDate),
+        const allDates = [
+            ...data.trainDates,
+            ...data.testDates,
         ]
 
         const allActualPrices = [
@@ -59,15 +66,12 @@ const PredictionChart = ({ data }: { data: NonNullable<ReturnType<typeof useGetP
             ...data.testPrices,
         ]
 
-        const allPredictedPrices = [
-            ...Array(data.trainPrices.length).fill(null),
-            ...shiftedPredicted.slice(0, data.testPrices.length + 1),
-        ]
+        const allPredictedPrices = allDates.map((date) => forecastByDate.get(date) ?? null)
 
-        const sliceStart = Math.max(0, allLabels.length - 30)
+        const sliceStart = Math.max(0, allDates.length - 30)
 
         return {
-            labels: allLabels.slice(sliceStart),
+            labels: allDates.slice(sliceStart).map(formatChartDate),
             datasets: [
                 {
                     label: 'Actual Close Price',
@@ -182,16 +186,36 @@ const PredictionsPage = () => {
     const [ticker, setTicker] = useState('AAPL')
     const [input, setInput] = useState('AAPL')
     const [horizon, setHorizon] = useState(5)
+    const [refreshing, setRefreshing] = useState(false)
+    const queryClient = useQueryClient()
 
-    const { data, isLoading, error } = useGetPredictionByTicker(ticker, { horizon })
-console.log('data', data)
+    const { data, isLoading, error, isFetching } = useGetPredictionByTicker(ticker, { horizon })
+
     const handleSearch = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault()
         const nextTicker = input.trim().toUpperCase()
         if (nextTicker) setTicker(nextTicker)
     }
 
+    const handleRefresh = async () => {
+        if (refreshing || isFetching) return
+        setRefreshing(true)
+        try {
+            await apiClient.get(`/${API_ENDPOINTS.PREDICTION}/${ticker}`, {
+                params: { horizon, refresh: 1 },
+            })
+            await queryClient.invalidateQueries({ queryKey: [API_ENDPOINTS.PREDICTION, ticker] })
+        } finally {
+            setRefreshing(false)
+        }
+    }
+
     const tone = data?.biasTone ?? 'text-muted-foreground'
+
+    const forecastDates = new Set(data?.predictedDates ?? [])
+    const windowDates = [...(data?.trainDates ?? []), ...(data?.testDates ?? [])].slice(-30)
+    const hasForecastInWindow = windowDates.some((date) => forecastDates.has(date))
+    const hasSavedForecasts = (data?.predictedDates?.length ?? 0) > 0
 
     return (
         <div className="space-y-6">
@@ -233,9 +257,21 @@ console.log('data', data)
 
                     <button
                         type="submit"
-                        className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                        disabled={isFetching || refreshing}
+                        className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                        Run forecast
+                        {isFetching ? 'Running…' : 'Run forecast'}
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={handleRefresh}
+                        disabled={isFetching || refreshing}
+                        title="Recompute and save the forecast"
+                        className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        <RefreshCw size={14} className={(isFetching || refreshing) ? 'animate-spin' : undefined} />
+                        {refreshing ? 'Refreshing…' : 'Refresh'}
                     </button>
                 </form>
             </div>
@@ -250,7 +286,7 @@ console.log('data', data)
 
             {!isLoading && !error && data && (
                 <div className="space-y-6">
-                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    <div className="grid gap-4 md:grid-cols-2">
                         <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
                             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Next Close Estimate</p>
                             <div className="mt-3 flex items-end justify-between gap-3">
@@ -267,21 +303,9 @@ console.log('data', data)
                         </div>
 
                         <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-                            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Horizon Return</p>
-                            <p className={`mt-3 text-2xl font-bold ${tone}`}>{formatPercent(data.horizonReturn)}</p>
-                            <p className="mt-2 text-xs text-muted-foreground">Projected move over the selected horizon.</p>
-                        </div>
-
-                        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
                             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Prediction Bias</p>
                             <p className={`mt-3 text-2xl font-bold ${tone}`}>{data.bias}</p>
                             <p className="mt-2 text-xs text-muted-foreground">Trend score from momentum and moving-average spread.</p>
-                        </div>
-
-                        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-                            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Confidence Spread</p>
-                            <p className="mt-3 text-2xl font-bold text-black">{formatPercent(data.confidenceSpread)}</p>
-                            <p className="mt-2 text-xs text-muted-foreground">Gap between bullish and bearish scenario endpoints.</p>
                         </div>
                     </div>
 
@@ -292,6 +316,13 @@ console.log('data', data)
                                     <p className="text-sm text-muted-foreground">
                                         Actual close price in blue, predicted price in dashed red.
                                     </p>
+                                    {data.savedAt && (
+                                        <p className="mt-1 text-xs text-muted-foreground">
+                                            {data.fromCache
+                                                ? `Plotted from saved forecast · generated ${new Date(data.savedAt).toLocaleString()}`
+                                                : `Forecast freshly computed · saved ${new Date(data.savedAt).toLocaleString()}`}
+                                        </p>
+                                    )}
                                 </div>
                                 <Activity className="h-5 w-5 text-primary" />
                             </div>
@@ -299,6 +330,14 @@ console.log('data', data)
                             <div className="mt-5 h-72">
                                 <PredictionChart data={data} />
                             </div>
+
+                            {!hasForecastInWindow && (
+                                <p className="mt-4 text-xs text-muted-foreground">
+                                    {hasSavedForecasts
+                                        ? 'No saved predictions fall inside this date window yet — they will appear here as you run forecasts over the coming days.'
+                                        : 'No predictions recorded yet — run a forecast to start building the saved history.'}
+                                </p>
+                            )}
 
                             <div className="mt-4 flex justify-center gap-6 text-sm text-muted-foreground">
                                 <div className="flex items-center gap-2">
@@ -401,10 +440,11 @@ console.log('data', data)
                                         <p className="mt-2 text-lg font-semibold text-grey">{formatCurrency(data.currentPrice)}</p>
                                     </div>
                                     <div className="rounded-xl border border-border/70 bg-background p-4 text-foreground">
-                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Window return</p>
-                                        <p className={`mt-2 text-lg font-semibold ${data.totalReturn >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                            {formatPercent(data.totalReturn)}
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Next-Day Return</p>
+                                        <p className={`mt-2 text-lg font-semibold ${data.expectedMove >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                            {formatPercent(data.expectedMove)}
                                         </p>
+                                        <p className="mt-1 text-xs text-muted-foreground">% move from today's close to tomorrow's predicted close.</p>
                                     </div>
                                     <div className="rounded-xl border border-border/70 bg-background p-4 text-foreground">
                                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">20-day avg</p>
