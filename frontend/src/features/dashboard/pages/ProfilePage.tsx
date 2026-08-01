@@ -37,10 +37,10 @@ const ProfilePage = () => {
                     <p className="text-sm text-muted-foreground">Review the account information tied to your dashboard session.</p>
                 </div>
 
-                <Button onClick={() => navigate(ROUTES.SETTINGS)} className="gap-2 self-start sm:self-auto">
+                {/* <Button onClick={() => navigate(ROUTES.SETTINGS)} className="gap-2 self-start sm:self-auto">
                     <Settings2 className="h-4 w-4" />
                     Account Settings
-                </Button>
+                </Button> */}
             </div>
 
             <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
@@ -124,7 +124,7 @@ const ProfilePage = () => {
                         </CardContent>
                     </Card>
 
-                    <Card className="border-border/70 shadow-sm bg-primary text-primary-foreground">
+                    {/* <Card className="border-border/70 shadow-sm bg-primary text-primary-foreground">
                         <CardHeader>
                             <CardTitle>Need to update your profile?</CardTitle>
                             <CardDescription className="text-primary-foreground/80">
@@ -136,7 +136,7 @@ const ProfilePage = () => {
                                 Open Settings
                             </Button>
                         </CardContent>
-                    </Card>
+                    </Card> */}
                 </div>
             </div>
         </div>

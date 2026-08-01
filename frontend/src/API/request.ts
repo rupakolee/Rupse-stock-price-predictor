@@ -18,7 +18,6 @@ interface ApiErrorResponse {
 //  All API calls in the app go through this.
 //  Import this in query.ts, mutation.ts, and Api-config.ts
 // ─────────────────────────────────────────────
- console.log("test",import.meta.env.VITE_API_BASE_URL,)
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,

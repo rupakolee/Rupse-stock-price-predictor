@@ -13,7 +13,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.use("/api", authRoute);
+app.use("/api/auth", authRoute);
 app.use("/api/fundamental", fundamentalRoute);
 app.use("/api/prediction", predictionRoute);
 app.use("/api/market", marketRoute);

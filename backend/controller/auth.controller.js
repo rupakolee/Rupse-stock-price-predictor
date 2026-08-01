@@ -89,6 +89,51 @@ const userLogin = async (req, res, next) => {
   }
 };
 
+const changePassword = async (req, res, next) => {
+  const { oldPassword, newPassword } = req.body;
+  try {
+    if (!oldPassword || !newPassword) {
+      return res
+        .status(400)
+        .json({ message: "Old and new passwords are required" });
+    }
+
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const token = authHeader.split(" ")[1];
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET || "1234");
+    } catch {
+      return res.status(401).json({ message: "Invalid or expired token" });
+    }
+
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      return res
+        .status(400)
+        .json({ message: "Current password is incorrect" });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    await user.save();
+
+    res.status(200).json({ message: "Password updated successfully" });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: "Failed to update password" });
+  }
+};
+
 const refreshAccessToken = async (req, res, next) => {
   try {
     const { refreshToken } = req.body;
@@ -132,4 +177,4 @@ const refreshAccessToken = async (req, res, next) => {
   }
 };
 
-export { userReg, userLogin, refreshAccessToken };
+export { userReg, userLogin, changePassword, refreshAccessToken };

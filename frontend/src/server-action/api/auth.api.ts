@@ -8,6 +8,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 import { mutateData } from "@/API/mutation";
+import apiClient from "@/API/request";
 import { API_ENDPOINTS, QUERY_KEYS, TOKEN_KEY, USER_KEY } from "@/constant/constant";
 import type { AuthData, AuthUser } from "@/hooks/useAuth";
 import { MOCK_AUTH } from "@/mocks/auth.mock";
@@ -25,6 +26,15 @@ export interface RegisterRequest {
   name: string;
   email: string;
   password: string;
+}
+
+export interface ChangePasswordRequest {
+  oldPassword: string;
+  newPassword: string;
+}
+
+export interface ChangePasswordResponse {
+  message: string;
 }
 
 // ─────────────────────────────────────────────
@@ -135,6 +145,26 @@ export const useLogoutMutation = () => {
     onError: (error) => {
       toast.error(error ?? "Logout failed.");
     },
+  });
+};
+
+/**
+ * useChangePasswordMutation
+ * Performs POST /auth/change-password.
+ * The backend verifies the old password before updating.
+ * Errors (e.g. incorrect current password) are surfaced through the
+ * rejected promise so callers can show them inline.
+ */
+export const useChangePasswordMutation = () => {
+  return useMutation<ChangePasswordResponse, string, ChangePasswordRequest>({
+    mutationFn: async (payload) => {
+      const { data } = await apiClient.post<ChangePasswordResponse>(
+        API_ENDPOINTS.AUTH.CHANGE_PASSWORD,
+        payload
+      );
+      return data;
+    },
+    retry: false,
   });
 };
 

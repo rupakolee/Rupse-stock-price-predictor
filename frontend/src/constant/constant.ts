@@ -1,5 +1,10 @@
 
 export const API_ENDPOINTS = {
+  AUTH: {
+    LOGIN: "auth/login",
+    REGISTER: "auth/register",
+    CHANGE_PASSWORD: "auth/change-password",
+  },
   FUNDAMENTAL: "fundamental",
   PREDICTION: "prediction",
   MARKET: "market",
