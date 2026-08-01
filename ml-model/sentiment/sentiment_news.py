@@ -9,9 +9,64 @@ Usage:
 
 import argparse
 import json
+import os
+import re
 import sys
 
 import yfinance as yf
+
+MODEL_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "data",
+    "models",
+    "svm_sentiment_model.pkl",
+)
+
+# Trained TF-IDF + linear SVM pipeline (see sentiment/notebooks/03_train_test_model.ipynb).
+# Loaded once per process; falls back to lexicon scoring if unavailable.
+_svm_model = None
+_svm_error = None
+try:
+    import joblib
+
+    _svm_model = joblib.load(MODEL_PATH)
+except Exception as exc:
+    _svm_model = None
+    _svm_error = str(exc)
+    print(f"Warning: SVM model unavailable ({exc}); falling back to lexicon scoring.", file=sys.stderr)
+
+
+def clean_text(text: str) -> str:
+    """Same preprocessing used when serving the SVM model in src/sentiment_api.py."""
+    text = str(text).lower()
+    text = re.sub(r"\$([a-zA-Z]{1,5})", r"ticker \1", text)
+    text = re.sub(r"(\d+\.?\d*)\s*%", r"\1 percent", text)
+    text = re.sub(r"\$[\d,.]+[bmk]?", "dollar amount", text)
+    text = re.sub(r"http\S+|www\S+", "", text)
+    text = re.sub(r"<[^>]+>", "", text)
+    text = re.sub(r"[^a-z0-9\s]", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+
+def score_headline_svm(title: str) -> dict:
+    """
+    TF-IDF + linear SVM sentiment scorer.
+    Returns { score: float[-1,1], label: 'Positive'|'Negative'|'Neutral' }
+    Score is P(positive) - P(negative) from the model's probability output.
+    """
+    if _svm_model is None:
+        return score_headline(title)
+
+    probs = _svm_model.predict_proba([clean_text(title)])[0]
+    classes = list(_svm_model.classes_)
+    prob_map = dict(zip(classes, probs))
+    label = classes[int(probs.argmax())]
+    score = round(
+        float(prob_map.get("positive", 0.0) - prob_map.get("negative", 0.0)),
+        3,
+    )
+    return {"score": score, "label": label.capitalize()}
 
 
 def score_headline(title: str) -> dict:
@@ -105,7 +160,7 @@ def fetch_news(symbol: str) -> list[dict]:
             from datetime import datetime, timezone
             pub_date = datetime.fromtimestamp(pub_date, tz=timezone.utc).isoformat()
 
-        sentiment = score_headline(title)
+        sentiment = score_headline_svm(title)
 
         articles.append({
             "title": title,
