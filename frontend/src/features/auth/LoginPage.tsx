@@ -10,7 +10,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { loginSchema } from "@/lib/auth.schema";
 import type { LoginForm } from "@/lib/auth.schema";
-import { QUERY_KEYS, TOKEN_KEY, USER_KEY } from '@/constant/constant'
+import { API_ENDPOINTS, QUERY_KEYS, TOKEN_KEY, USER_KEY } from '@/constant/constant'
 import { ROUTES } from '@/routes/routes'
 
 const LoginPage = () => {
@@ -31,7 +31,7 @@ const LoginPage = () => {
     try {
       setIsPending(true)
       const base = import.meta.env.VITE_API_BASE_URL || "http://localhost:8001/api";
-      const res = await fetch(`${base}/login`, {
+      const res = await fetch(`${base}/${API_ENDPOINTS.AUTH.LOGIN}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
