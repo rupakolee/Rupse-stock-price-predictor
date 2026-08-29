@@ -51,11 +51,6 @@ const PredictionChart = ({ data }: { data: NonNullable<ReturnType<typeof useGetP
     const chartRef = useRef<ChartJS<'line'> | null>(null)
 
     const chartData = useMemo(() => {
-        const forecastByDate = new Map<string, number | null>()
-        data.predictedDates.forEach((date, index) => {
-            forecastByDate.set(date, data.predictedPrices[index] ?? null)
-        })
-
         const allDates = [
             ...data.trainDates,
             ...data.testDates,
@@ -66,12 +61,33 @@ const PredictionChart = ({ data }: { data: NonNullable<ReturnType<typeof useGetP
             ...data.testPrices,
         ]
 
-        const allPredictedPrices = allDates.map((date) => forecastByDate.get(date) ?? null)
+        // Bidirectional LSTM backtest predictions align 1:1 with testDates.
+        const backtestPrices = data.backtestPrices ?? []
+        const testStartIndex = data.trainDates.length
+        const backtestLine = allDates.map((_, index) => {
+            if (index < testStartIndex) return null
+            return backtestPrices[index - testStartIndex] ?? null
+        })
 
-        const sliceStart = Math.max(0, allDates.length - 30)
+        // Append the next-day forward prediction as the final point.
+        const nextDate = data.points?.[0]?.date
+        const nextPrice = data.nextClose
+
+        const labels = [...allDates]
+        const predictedLine = [...backtestLine]
+
+        if (nextDate && typeof nextPrice === 'number' && Number.isFinite(nextPrice)) {
+            labels.push(nextDate)
+            predictedLine.push(nextPrice)
+        }
+
+        const hasNext = predictedLine.length > backtestLine.length
+
+        const sliceStart = Math.max(0, labels.length - 30)
+        const slicedPredicted = predictedLine.slice(sliceStart)
 
         return {
-            labels: allDates.slice(sliceStart).map(formatChartDate),
+            labels: labels.slice(sliceStart).map(formatChartDate),
             datasets: [
                 {
                     label: 'Actual Close Price',
@@ -82,13 +98,17 @@ const PredictionChart = ({ data }: { data: NonNullable<ReturnType<typeof useGetP
                     pointRadius: 0,
                 },
                 {
-                    label: 'Predicted Close Price',
-                    data: allPredictedPrices.slice(sliceStart),
+                    label: 'Backtest + Next-Day Predicted',
+                    data: slicedPredicted,
                     borderColor: '#EF4444',
                     borderWidth: 2,
                     borderDash: [5, 5],
                     tension: 0.1,
-                    pointRadius: 0,
+                    pointRadius: slicedPredicted.map((_, index) =>
+                        index === slicedPredicted.length - 1 && hasNext ? 5 : 0,
+                    ),
+                    pointBackgroundColor: '#EF4444',
+                    pointBorderColor: '#EF4444',
                 },
             ],
         }
@@ -212,11 +232,6 @@ const PredictionsPage = () => {
 
     const tone = data?.biasTone ?? 'text-muted-foreground'
 
-    const forecastDates = new Set(data?.predictedDates ?? [])
-    const windowDates = [...(data?.trainDates ?? []), ...(data?.testDates ?? [])].slice(-30)
-    const hasForecastInWindow = windowDates.some((date) => forecastDates.has(date))
-    const hasSavedForecasts = (data?.predictedDates?.length ?? 0) > 0
-
     return (
         <div className="space-y-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -314,13 +329,13 @@ const PredictionsPage = () => {
                                 <div>
                                     <h3 className="text-lg font-semibold text-black">Actual vs Predicted Price</h3>
                                     <p className="text-sm text-muted-foreground">
-                                        Actual close price in blue, predicted price in dashed red.
+                                        Actual close price in blue, 3-day backtest prediction in dashed red, with the next-day forecast marked as a dot.
                                     </p>
                                     {data.savedAt && (
                                         <p className="mt-1 text-xs text-muted-foreground">
                                             {data.fromCache
-                                                ? `Plotted from saved forecast · generated ${new Date(data.savedAt).toLocaleString()}`
-                                                : `Forecast freshly computed · saved ${new Date(data.savedAt).toLocaleString()}`}
+                                                ? `Plotted from cached backtest · generated ${new Date(data.savedAt).toLocaleString()}`
+                                                : `Backtest computed live · saved ${new Date(data.savedAt).toLocaleString()}`}
                                         </p>
                                     )}
                                 </div>
@@ -330,14 +345,6 @@ const PredictionsPage = () => {
                             <div className="mt-5 h-72">
                                 <PredictionChart data={data} />
                             </div>
-
-                            {!hasForecastInWindow && (
-                                <p className="mt-4 text-xs text-muted-foreground">
-                                    {hasSavedForecasts
-                                        ? 'No saved predictions fall inside this date window yet — they will appear here as you run forecasts over the coming days.'
-                                        : 'No predictions recorded yet — run a forecast to start building the saved history.'}
-                                </p>
-                            )}
 
                             <div className="mt-4 flex justify-center gap-6 text-sm text-muted-foreground">
                                 <div className="flex items-center gap-2">
@@ -350,7 +357,7 @@ const PredictionsPage = () => {
                                         <div className="h-px w-3 bg-red-500" />
                                         <div className="h-px w-3 bg-red-500" />
                                     </div>
-                                    <span>Predicted Close Price</span>
+                                    <span>Backtest + Next-Day Predicted</span>
                                 </div>
                             </div>
                         </div>

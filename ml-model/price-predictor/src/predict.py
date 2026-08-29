@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from config import LSTM_FEATURES, TRAIN_SPLIT, WINDOW_SIZE  # noqa: E402
+from config import BACKTEST_WINDOW, LSTM_FEATURES, WINDOW_SIZE  # noqa: E402
 from src.data_loader import load_stock_data  # noqa: E402
 from src.dataset import create_sequences  # noqa: E402
 from src.features import create_features  # noqa: E402
@@ -121,7 +121,8 @@ def build_payload(symbol: str, horizon: int) -> dict:
 
     X_seq, y_seq = create_sequences(X_scaled, y_raw, window_size=WINDOW_SIZE)
 
-    split = int(len(X_seq) * TRAIN_SPLIT)
+    # Backtest window: run the model over the last BACKTEST_WINDOW days.
+    split = max(1, len(X_seq) - BACKTEST_WINDOW)
     X_train, X_test = X_seq[:split], X_seq[split:]
     y_train, y_test = y_seq[:split], y_seq[split:]
 
