@@ -9,6 +9,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { registerSchema } from '@/lib/auth.schema'
 import type { RegisterForm } from '@/lib/auth.schema'
+import { API_ENDPOINTS } from '@/constant/constant'
 import { ROUTES } from '@/routes/routes'
 
 const Register = () => {
@@ -28,7 +29,7 @@ const Register = () => {
     try {
       setIsPending(true)
       const base = import.meta.env.VITE_API_BASE_URL || "http://localhost:8001/api";
-      const res = await fetch(`${base}/register`, {
+      const res = await fetch(`${base}/${API_ENDPOINTS.AUTH.REGISTER}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
